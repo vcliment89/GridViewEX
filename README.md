@@ -1,3 +1,4 @@
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/ae50e99ffb68962588c0be3b387931dc "githalytics.com")](http://githalytics.com/vcliment89/GridViewEX)
 <a href="https://github.com/vcliment89/GridViewEX/">
   <img src="http://cdn1.iconfinder.com/data/icons/cc_mono_icon_set/blacks/48x48/2x2_grid.png">
 </a>
