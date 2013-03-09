@@ -1,3 +1,7 @@
+<a href="https://github.com/vcliment89/GridViewEX/">
+  <img src="http://cdn1.iconfinder.com/data/icons/cc_mono_icon_set/blacks/48x48/2x2_grid.png">
+</a>
+
 GridViewEX
 ==========
 
