@@ -6,7 +6,7 @@
 GridViewEX
 ==========
 
-GridViewEX is a .NET extended Gridview lot more functional and powerful than the original, created and maintained by [Vicent Climent](www.linkedin.com/in/vcliment89/en).
+GridViewEX is a .NET extended Gridview lot more functional and powerful than the original, created and maintained by [Vicent Climent](http://www.linkedin.com/in/vcliment89/en).
 
 ## Main features
  * Ability to run multiple sorting on the same table each one with different sort order. No restriction on the limit, but of course the order of the sorting matter.
