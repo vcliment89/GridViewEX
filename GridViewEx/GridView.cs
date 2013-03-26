@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web;
+using System.Web.Script.Serialization;
 using System.Web.UI;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
@@ -23,14 +23,14 @@ namespace GridViewEx
         public bool TableStriped { get; set; }
         public bool TableHover { get; set; }
         public string PagerSelectorOptions { get; set; }
-        //public bool CustomOrder { get; set; }
+        public List<SortExpression> SortExpressions { get; set; }
 
         public event EventHandler SortingChanged;
         public event EventHandler FilterDeleted;
-        //public event EventHandler FilterApplied;
         public event EventHandler PageChanged;
         public event EventHandler ColumnSelectionChanged;
         public event EventHandler ExcelExport;
+        public event EventHandler ViewChanged;
 
         // Init with our default options
         protected override void OnInit(EventArgs e)
@@ -44,6 +44,7 @@ namespace GridViewEx
                 css.Add("table-hover");
 
             CssClass = String.Join(" ", css.Distinct().ToArray());
+            PageSize = PageSize == 0 ? 10 : PageSize;
             GridLines = GridLines.None;
             AllowSorting = true;
             AutoGenerateColumns = false;
@@ -57,6 +58,23 @@ namespace GridViewEx
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+
+            // Reset the session when reload the grid unles ks is defined
+            if (!Page.IsPostBack)
+            {
+                bool keepSession = false;
+                bool.TryParse(Context.Request["ks"], out keepSession);
+
+                if (!keepSession)
+                {
+                    Context.Session[this.ID + "_PageIndex"] = PageIndex;
+                    Context.Session[this.ID + "_PageSize"] = PageSize;
+                    Context.Session[this.ID + "_SortExpressions"] = SortExpressions != null ? SortExpressions : new List<SortExpression>();
+                    Context.Session[this.ID + "_Filters"] = null;
+                    Context.Session[this.ID + "_Columns"] = null;
+                }
+            }
+
             InitControls();
         }
 
@@ -65,17 +83,38 @@ namespace GridViewEx
             // Add export control
             this.Controls.Add(CreateExportControl());
 
-            // Add management sorting control
+            // Add sorting management control
             this.Controls.Add(CreateSortingManagementControl());
 
-            // Add management filters control
+            // Add filter management control
             this.Controls.Add(CreateFilterManagementControl());
 
-            // Add management columns control
+            // Add column management control
             this.Controls.Add(CreateColumnManagementControl());
+
+            // Add view management control
+            this.Controls.Add(CreateViewManagementControl());
 
             // Add pager control
             this.Controls.Add(CreatePagerControl());
+        }
+
+        public void SetView(ViewExpression view)
+        {
+            if (view != null)
+            {
+                Context.Session[this.ID + "_Columns"] = view.ColumnExpressions;
+                Context.Session[this.ID + "_Filters"] = view.FilterExpressions;
+                Context.Session[this.ID + "_SortExpressions"] = view.SortExpressions;
+                
+                if (view.PageSize != 0)
+                    Context.Session[this.ID + "_PageSize"] = view.PageSize;
+            }
+        }
+
+        public void LoadViews(List<ViewExpression> views)
+        {
+            Context.Session[this.ID + "_ViewExpressions"] = views;
         }
 
         protected override void Render(HtmlTextWriter writer)
@@ -131,7 +170,7 @@ namespace GridViewEx
             hlCompactTable.RenderControl(writer);
             hlExpandTable.RenderControl(writer);
 
-            if (base.Controls.Count == 6)
+            if (base.Controls.Count == 7)
             {
                 // Render export control
                 base.Controls[1].RenderControl(writer);
@@ -149,16 +188,20 @@ namespace GridViewEx
                 base.Controls[4].RenderControl(writer);
                 base.Controls[4].Visible = false;
 
-                base.Controls[5].Visible = false; // Hide because it should go after the table
+                // Render management views control
+                base.Controls[5].RenderControl(writer);
+                base.Controls[5].Visible = false;
+
+                base.Controls[6].Visible = false; // Hide because it should go after the table
 
                 writer.Write("</legend></fieldset><div id=\"" + this.ClientID + "GridViewTable\" class=\"grid-view-table\">");
                 base.Render(writer);
                 writer.Write("</div>"); // End of .grid-view-table
 
                 // Render pager control
-                base.Controls[5].Visible = true;
-                base.Controls[5].RenderControl(writer);
-                base.Controls[5].Visible = false;
+                base.Controls[6].Visible = true;
+                base.Controls[6].RenderControl(writer);
+                base.Controls[6].Visible = false;
             }
             else
             {
@@ -799,11 +842,13 @@ namespace GridViewEx
             hlColumnSelection.Attributes.Add("style", "margin-right: 10px;");
             phControl.Controls.Add(hlColumnSelection);
 
+            var js = new JavaScriptSerializer();
+
             var hfColumnsSelected = new HiddenField
             {
                 ID = "hf" + this.ID + "ColumnsSelected",
                 ClientIDMode = ClientIDMode.Static,
-                Value = JsonConvert.SerializeObject(columns)
+                Value = js.Serialize(columns)
             };
             phControl.Controls.Add(hfColumnsSelected);
 
@@ -862,10 +907,10 @@ namespace GridViewEx
             lbApply.Click += lbColumnApply_Click;
             divColumnSelection.Controls.Add(lbApply);
 
-            var ol = new HtmlGenericControl("ol");
-
             if (columns.Count >= 1)
             {
+                var ol = new HtmlGenericControl("ol");
+
                 foreach (var column in columns)
                 {
                     var liColumn = new HtmlGenericControl("li");
@@ -1046,6 +1091,251 @@ namespace GridViewEx
 
             JSScriptEndRequestHandler += this.ClientID + @"ColumnPopover();";
             JSScriptDocumentReady += this.ClientID + @"ColumnPopover();";
+
+            return phControl;
+        }
+
+        private Control CreateViewManagementControl()
+        {
+            var views = (List<ViewExpression>)Context.Session[this.ID + "_ViewExpressions"] != null
+                ? (List<ViewExpression>)Context.Session[this.ID + "_ViewExpressions"]
+                : new List<ViewExpression>();
+
+            var phControl = new PlaceHolder();
+
+            if (views.Count >= 1)
+            {
+                var divAppend = new HtmlGenericControl("div");
+                divAppend.ID = "divViewExpressionList";
+                divAppend.ClientIDMode = ClientIDMode.Static;
+                divAppend.Attributes.Add("class", "pull-right input-append");
+                divAppend.Attributes.Add("style", "margin-right: 10px;");
+
+                var ddlViews = new DropDownList
+                {
+                    ID = "ddl" + this.ID + "ViewExpressionList",
+                    ClientIDMode = ClientIDMode.Static,
+                    AutoPostBack = true,
+                    CssClass = "span1"
+                };
+                ddlViews.SelectedIndexChanged += ddlViews_SelectedIndexChanged;
+
+                ddlViews.Items.Add(new ListItem("", "-1"));
+                ddlViews.Items.AddRange(views.Select(x => new ListItem
+                {
+                    Text = x.Name,
+                    Value = x.ID.ToString()
+                }).ToArray());
+
+                divAppend.Controls.Add(ddlViews);
+
+                var hlViewExpression = new HtmlAnchor
+                {
+                    ID = "hl" + this.ID + "ViewExpression",
+                    ClientIDMode = ClientIDMode.Static,
+                    HRef = "#div" + this.ID + "ViewExpression",
+                    Title = "View Management",
+                    InnerHtml = "<i class=\"icon-eye-open\"></i>",
+                };
+                hlViewExpression.Attributes.Add("data-toggle", "modal");
+                hlViewExpression.Attributes.Add("role", "button");
+                hlViewExpression.Attributes.Add("style", "display: inline-block;");
+                hlViewExpression.Attributes.Add("class", "btn add-on");
+
+                divAppend.Controls.Add(hlViewExpression);
+                phControl.Controls.Add(divAppend);
+
+//                JSScript += @"
+//                    function " + this.ClientID + @"ViewsManagement() {
+//                        $('#" + divAppend.ClientID + @"').hover(function() {
+//                            $('#" + hlViewExpression.ClientID + @"').delay(500).queue(function(next){
+//                                $(this).addClass('add-on');
+//                                $('#" + ddlViews.ClientID + @"').show();
+//                                next();
+//                            });
+//                        }, function() { 
+//                            $('#" + hlViewExpression.ClientID + @"').removeClass('add-on');
+//                            $('#" + ddlViews.ClientID + @"').hide();
+//                        });
+//                    }
+//                ";
+
+//                JSScriptEndRequestHandler += this.ClientID + @"ViewsManagement();";
+//                JSScriptDocumentReady += this.ClientID + @"ViewsManagement();";
+            }
+            else
+            {
+                var hlViewExpression = new HtmlAnchor
+                {
+                    ID = "hl" + this.ID + "ViewExpression",
+                    ClientIDMode = ClientIDMode.Static,
+                    HRef = "#div" + this.ID + "ViewExpression",
+                    Title = "View Management",
+                    InnerHtml = "<i class=\"icon-eye-open\"></i>",
+                };
+                hlViewExpression.Attributes.Add("data-toggle", "modal");
+                hlViewExpression.Attributes.Add("role", "button");
+                hlViewExpression.Attributes.Add("style", "display: inline-block;margin-right: 10px;");
+                hlViewExpression.Attributes.Add("class", "btn pull-right");
+
+                phControl.Controls.Add(hlViewExpression);
+            }
+
+            var divViewExpression = new HtmlGenericControl("div");
+            divViewExpression.ID = "div" + this.ID + "ViewExpression";
+            divViewExpression.ClientIDMode = ClientIDMode.Static;
+            divViewExpression.Attributes.Add("class", "modal hide fade");
+            divViewExpression.Attributes.Add("tabindex", "-1");
+            divViewExpression.Attributes.Add("role", "dialog");
+            divViewExpression.Attributes.Add("aria-labelledby", "h3" + this.ID + "ViewExpressionLabel");
+            divViewExpression.Attributes.Add("aria-hidden", "true");
+
+            /* START MODAL HEADER */
+            var divModalHeader = new HtmlGenericControl("div");
+            divModalHeader.Attributes.Add("class", "modal-header");
+
+            var btnCloseModal = new HtmlButton { InnerText = "x" };
+            btnCloseModal.Attributes.Add("type", "button");
+            btnCloseModal.Attributes.Add("class", "close");
+            btnCloseModal.Attributes.Add("data-dismiss", "modal");
+            btnCloseModal.Attributes.Add("aria-hidden", "true");
+            divModalHeader.Controls.Add(btnCloseModal);
+
+            var h3ModalLabel = new HtmlGenericControl("h3");
+            h3ModalLabel.ID = "h3" + this.ID + "ViewExpressionLabel";
+            h3ModalLabel.ClientIDMode = ClientIDMode.Static;
+            h3ModalLabel.InnerText = "View Management";
+            divModalHeader.Controls.Add(h3ModalLabel);
+
+            divViewExpression.Controls.Add(divModalHeader);
+            /* END MODAL HEADER */
+
+            /* START MODAL BODY */
+            var divModalBody = new HtmlGenericControl("div");
+            divModalBody.Attributes.Add("class", "modal-body");
+
+            var divModalBodyRow = new HtmlGenericControl("div");
+            divModalBodyRow.Attributes.Add("class", "row-fluid");
+
+            var divModalBodyRowSpan1 = new HtmlGenericControl("div");
+            divModalBodyRowSpan1.Attributes.Add("class", "span6");
+
+            var txtViewName = new TextBox
+            {
+                ID = "txt" + this.ID + "ViewExpressionTitle",
+                ClientIDMode = ClientIDMode.Static
+            };
+            txtViewName.Attributes.Add("placeholder", "View name...");
+            divModalBodyRowSpan1.Controls.Add(txtViewName);
+            
+            var cbSaveFilterLabel = new HtmlGenericControl("label");
+            cbSaveFilterLabel.Attributes.Add("class", "checkbox");
+            cbSaveFilterLabel.Controls.Add(new CheckBox {
+                Checked = true,
+                ID = "cb" + this.ID + "ViewExpressionFilters",
+                ClientIDMode = ClientIDMode.Static
+            });
+            cbSaveFilterLabel.Controls.Add(new Literal { Text = " Save Filters" });
+            divModalBodyRowSpan1.Controls.Add(cbSaveFilterLabel);
+
+            var cbSaveSortingLabel = new HtmlGenericControl("label");
+            cbSaveSortingLabel.Attributes.Add("class", "checkbox");
+            cbSaveSortingLabel.Controls.Add(new CheckBox {
+                Checked = true,
+                ID = "cb" + this.ID + "ViewExpressionSortings"
+            });
+            cbSaveSortingLabel.Controls.Add(new Literal { Text = " Save Sortings" });
+            divModalBodyRowSpan1.Controls.Add(cbSaveSortingLabel);
+
+            var cbSaveColumnLabel = new HtmlGenericControl("label");
+            cbSaveColumnLabel.Attributes.Add("class", "checkbox");
+            cbSaveColumnLabel.Controls.Add(new CheckBox {
+                Checked = true,
+                ID = "cb" + this.ID + "ViewExpressionColumns"
+            });
+            cbSaveColumnLabel.Controls.Add(new Literal { Text = " Save Columns" });
+            divModalBodyRowSpan1.Controls.Add(cbSaveColumnLabel);
+
+            var cbSavePageSizeLabel = new HtmlGenericControl("label");
+            cbSavePageSizeLabel.Attributes.Add("class", "checkbox");
+            cbSavePageSizeLabel.Controls.Add(new CheckBox {
+                Checked = false,
+                ID = "cb" + this.ID + "ViewExpressionPageSize"
+            });
+            cbSavePageSizeLabel.Controls.Add(new Literal { Text = " Save Page Size" });
+            divModalBodyRowSpan1.Controls.Add(cbSavePageSizeLabel);
+
+            divModalBodyRow.Controls.Add(divModalBodyRowSpan1);
+
+            var divModalBodyRowSpan2 = new HtmlGenericControl("div");
+            divModalBodyRowSpan2.Attributes.Add("class", "span6");
+
+            var divSavedFilters = new HtmlGenericControl("div");
+            divSavedFilters.Attributes.Add("style", "overflow-y:auto; width:100%; min-height:100px; padding:5px; max-height:200px; border:1px solid whiteSmoke; font-size:14px; line-height:20px;");
+
+            if (views.Count >= 1)
+            {
+                //var hlSelectAll = new HtmlAnchor
+                //{
+                //    HRef = "#",
+                //    InnerText = "Select All",
+                //    Title = "Select all columns"
+                //};
+                ////hlSelectAll.Attributes.Add("onclick", "ColumnSelectionShowAll(this, false);");
+                //divSavedFilters.Controls.Add(hlSelectAll);
+
+                var ol = new HtmlGenericControl("ol");
+
+                foreach (var view in views)
+                {
+                    var li = new HtmlGenericControl("li");
+
+                    var lblVisible = new HtmlGenericControl("label");
+                    lblVisible.Attributes.Add("class", "checkbox");
+
+                    //var cbVisible = new CheckBox();
+                    ////cbVisible.Attributes.Add("onclick", "ColumnSelectionChanged(this);");
+                    //cbVisible.Attributes.Add("data-index", view.ID.ToString());
+
+                    //lblVisible.Controls.Add(cbVisible);
+                    lblVisible.Controls.Add(new Literal { Text = view.Name });
+
+                    li.Controls.Add(lblVisible);
+                    ol.Controls.Add(li);
+                }
+
+                divSavedFilters.Controls.Add(ol);
+            }
+            else
+                divSavedFilters.Controls.Add(new Label { Text = "No views" });
+
+            
+            divModalBodyRowSpan2.Controls.Add(divSavedFilters);
+            divModalBodyRow.Controls.Add(divModalBodyRowSpan2);
+
+            divModalBody.Controls.Add(divModalBodyRow);
+            divViewExpression.Controls.Add(divModalBody);
+            /* END MODAL BODY */
+
+            /* START MODAL FOOTER */
+            var divModalFooter = new HtmlGenericControl("div");
+            divModalFooter.Attributes.Add("class", "modal-footer");
+
+            var btnCloseModalFooter = new HtmlButton { InnerText = "Close" };
+            btnCloseModalFooter.Attributes.Add("class", "btn");
+            btnCloseModalFooter.Attributes.Add("data-dismiss", "modal");
+            btnCloseModalFooter.Attributes.Add("aria-hidden", "true");
+            divModalFooter.Controls.Add(btnCloseModalFooter);
+
+            var btnSaveViewManagement = new LinkButton { Text = "Save" };
+            btnSaveViewManagement.Click += btnSaveViewManagement_Click;
+            btnSaveViewManagement.Attributes.Add("class", "btn btn-primary");
+            divModalFooter.Controls.Add(btnSaveViewManagement);
+
+            divViewExpression.Controls.Add(divModalFooter);
+            /* END MODAL FOOTER */
+
+            phControl.Controls.Add(divViewExpression);
 
             return phControl;
         }
@@ -1305,7 +1595,9 @@ namespace GridViewEx
                 var cookie = Page.Request.Cookies[this.ID + "_ColumnsSelected"];
                 if (cookie != null)
                 {
-                    var columnSelection = JsonConvert.DeserializeObject<List<ColumnExpression>>(HttpUtility.UrlDecode(cookie.Value));
+                    var js = new JavaScriptSerializer();
+
+                    var columnSelection = js.Deserialize<List<ColumnExpression>>(HttpUtility.UrlDecode(cookie.Value));
                     Context.Session[this.ID + "_Columns"] = columnSelection.OrderBy(x => x.Index).ToList();
 
                     if (ColumnSelectionChanged != null)
@@ -1340,6 +1632,52 @@ namespace GridViewEx
 
                 if (PageChanged != null)
                     PageChanged(null, EventArgs.Empty);
+            }
+
+            InitControls();
+        }
+
+        protected void btnSaveViewManagement_Click(object sender, EventArgs e)
+        {
+            var btn = sender as LinkButton;
+            if (btn != null
+                && ViewChanged != null)
+            {
+                var txtName = btn.NamingContainer.FindControl("txt" + this.ID + "ViewExpressionTitle") as TextBox;
+                var cbFilters = btn.NamingContainer.FindControl("cb" + this.ID + "ViewExpressionFilters") as CheckBox;
+                var cbSortings = btn.NamingContainer.FindControl("cb" + this.ID + "ViewExpressionSortings") as CheckBox;
+                var cbColumns = btn.NamingContainer.FindControl("cb" + this.ID + "ViewExpressionColumns") as CheckBox;
+                var cbPageSize = btn.NamingContainer.FindControl("cb" + this.ID + "ViewExpressionPageSize") as CheckBox;
+                if (txtName != null
+                    && cbFilters != null
+                    && cbSortings != null
+                    && cbColumns != null
+                    && cbPageSize != null)
+                {
+                    var view = new ViewExpression
+                    {
+                        ColumnExpressions = cbColumns.Checked ? Context.Session[this.ID + "_Columns"] as List<ColumnExpression> : null,
+                        FilterExpressions = cbFilters.Checked ? Context.Session[this.ID + "_Filters"] as List<FilterExpression> : null,
+                        SortExpressions = cbSortings.Checked ? Context.Session[this.ID + "_SortExpressions"] as List<SortExpression> : null,
+                        Name = txtName.Text,
+                        PageSize = cbPageSize.Checked ? Convert.ToInt32(Context.Session[this.ID + "_PageSize"]) : 0
+                    };
+
+                    ViewChanged(view, EventArgs.Empty);
+                }
+            }
+
+            InitControls();
+        }
+
+        protected void ddlViews_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var ddl = sender as DropDownList;
+            if (ddl != null
+                && ViewChanged != null)
+            {
+                int viewID = Convert.ToInt32(ddl.SelectedValue);
+                ViewChanged(viewID, EventArgs.Empty);
             }
 
             InitControls();

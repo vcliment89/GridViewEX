@@ -42,6 +42,26 @@ namespace GridViewEx
         public string DataFormatExpression;
     }
 
+    [Serializable]
+    public class ViewExpression
+    {
+        public int ID;
+        public string Name;
+        public List<SortExpression> SortExpressions;
+        public List<FilterExpression> FilterExpressions;
+        public List<ColumnExpression> ColumnExpressions;
+        public int PageSize;
+    }
+
+    [Serializable]
+    public class JSONViewExpression
+    {
+        public List<SortExpression> SortExpressions;
+        public List<FilterExpression> FilterExpressions;
+        public List<ColumnExpression> ColumnExpressions;
+        public int PageSize;
+    }
+
     public enum SearchTypeEnum
     {
         None,
@@ -403,7 +423,22 @@ namespace GridViewEx
             return arr.Contains(filterExpression);
         }
 
-        public static void GetExcel(List<dynamic> source, List<ColumnExpression> columns, string title)
+        public static void ExportExcel(List<dynamic> source, List<ColumnExpression> columns, string title)
+        {
+            var excel = GetExcel(source, columns, title);
+
+            HttpContext.Current.Response.Clear();
+            HttpContext.Current.Response.Buffer = true;
+            HttpContext.Current.Response.Charset = "";
+            HttpContext.Current.Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            HttpContext.Current.Response.AddHeader("content-disposition", "attachment;  filename=" + title + ".xlsx");
+            HttpContext.Current.Response.BinaryWrite(excel);
+            HttpContext.Current.Response.Flush();
+            HttpContext.Current.Response.End();
+        }
+
+        public static byte[] GetExcel(List<dynamic> source, List<ColumnExpression> columns, string title)
         {
             if (String.IsNullOrWhiteSpace(title))
                 title = "Export";
@@ -518,15 +553,7 @@ namespace GridViewEx
                 // Autofit width
                 ws.Cells.AutoFitColumns();
 
-                HttpContext.Current.Response.Clear();
-                HttpContext.Current.Response.Buffer = true;
-                HttpContext.Current.Response.Charset = "";
-                HttpContext.Current.Response.Cache.SetCacheability(HttpCacheability.NoCache);
-                HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                HttpContext.Current.Response.AddHeader("content-disposition", "attachment;  filename=" + title + ".xlsx");
-                HttpContext.Current.Response.BinaryWrite(excelFile.GetAsByteArray());
-                HttpContext.Current.Response.Flush();
-                HttpContext.Current.Response.End();
+                return excelFile.GetAsByteArray();
             }
         }
     }
