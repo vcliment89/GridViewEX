@@ -20,7 +20,6 @@ GridViewEX is a .NET extended Gridview lot more functional and powerful than the
  * [jQuery UI v1.9.2+](https://github.com/jquery/jquery)
  * [Bootstrap v2.2.2+](https://github.com/twitter/bootstrap)
  * [EPPlus v3.1.2](http://epplus.codeplex.com/)
- * [JSON.NET v4.5.11](http://json.codeplex.com/)
 
 ## Bug tracker
 
