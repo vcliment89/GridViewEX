@@ -12,84 +12,209 @@ using System.Web.UI.WebControls;
 
 namespace GridViewEx
 {
+    /// <summary>
+    /// Class to store the sort expression
+    /// </summary>
     [Serializable]
     public class SortExpression
     {
+        /// <summary>
+        /// Stores the column name (DataField)
+        /// </summary>
         public string Column;
+        /// <summary>
+        /// Stores the column display name
+        /// </summary>
+        public string DisplayName;
+        /// <summary>
+        /// Stores the direction of the sorting (ASC or DESC)
+        /// </summary>
         public string Direction;
+        /// <summary>
+        /// Stores the previous direction of the sorting expression (ASC or DESC)
+        /// </summary>
         public string PreviousDirection;
     }
 
+    /// <summary>
+    /// Class to store the filter expression
+    /// </summary>
     [Serializable]
     public class FilterExpression
     {
+        /// <summary>
+        /// Stores the column name (DataField)
+        /// </summary>
         public string Column;
+        /// <summary>
+        /// Stores the column display name
+        /// </summary>
         public string DisplayName;
+        /// <summary>
+        /// Stores the filter expression full name
+        /// </summary>
         public string Expression;
+        /// <summary>
+        /// Stores the filter expression short name
+        /// </summary>
         public string ExpressionShortName;
+        /// <summary>
+        /// Stores the text of the filter
+        /// </summary>
         public string Text;
     }
 
+    /// <summary>
+    /// Class to store the column expression
+    /// </summary>
     [Serializable]
     public class ColumnExpression
     {
-        public string ColumnName;
+        /// <summary>
+        /// Stores the column name (DataField)
+        /// </summary>
+        public string Column;
+        /// <summary>
+        /// Stores the column display name
+        /// </summary>
         public string DisplayName;
+        /// <summary>
+        /// Stores if the column is visible or not
+        /// </summary>
         public bool Visible;
+        /// <summary>
+        /// Stores the column type
+        /// </summary>
         public string Type;
+        /// <summary>
+        /// Stores the column order index
+        /// </summary>
         public int Index;
+        /// <summary>
+        /// Stores the column data format
+        /// </summary>
         public DataFormatEnum DataFormat;
+        /// <summary>
+        /// Stores the column data format expression in case DataFormat is set to 'Expression'
+        /// </summary>
         public string DataFormatExpression;
     }
 
+    /// <summary>
+    /// Class to store the view expression
+    /// </summary>
     [Serializable]
     public class ViewExpression
     {
+        /// <summary>
+        /// Stores the unique ID of the view
+        /// </summary>
         public int ID;
+        /// <summary>
+        /// Stores the name of the view
+        /// </summary>
         public string Name;
+        /// <summary>
+        /// Stores the sort expression
+        /// </summary>
         public List<SortExpression> SortExpressions;
+        /// <summary>
+        /// Stores the filter expression
+        /// </summary>
         public List<FilterExpression> FilterExpressions;
+        /// <summary>
+        /// Stores the column expression
+        /// </summary>
         public List<ColumnExpression> ColumnExpressions;
+        /// <summary>
+        /// Stores the table page size
+        /// </summary>
         public int PageSize;
+        /// <summary>
+        /// Stores if is the default view
+        /// </summary>
+        public bool DefaultView;
     }
 
-    [Serializable]
-    public class JSONViewExpression
-    {
-        public List<SortExpression> SortExpressions;
-        public List<FilterExpression> FilterExpressions;
-        public List<ColumnExpression> ColumnExpressions;
-        public int PageSize;
-    }
-
+    /// <summary>
+    /// Enumerator with the types of search allowed
+    /// </summary>
     public enum SearchTypeEnum
     {
+        /// <summary>
+        /// Default. No search
+        /// </summary>
         None,
+        /// <summary>
+        /// Text input
+        /// </summary>
         TextBox,
+        /// <summary>
+        /// Dropdown list
+        /// </summary>
         DropDownList
     }
 
+    /// <summary>
+    /// Enumerator with the data formats allowed
+    /// </summary>
     public enum DataFormatEnum
     {
+        /// <summary>
+        /// Default. Plain text
+        /// </summary>
         Text,
+        /// <summary>
+        /// Numeric (2.00)
+        /// </summary>
         Number,
+        /// <summary>
+        /// Percentage number (3.25%)
+        /// </summary>
         Percentage,
+        /// <summary>
+        /// Currency number ($ 3.25)
+        /// </summary>
         Currency,
+        /// <summary>
+        /// Date number (29/08/2012)
+        /// </summary>
         Date,
+        /// <summary>
+        /// Short date number (29/08)
+        /// </summary>
         ShortDate,
+        /// <summary>
+        /// Hour number (3H)
+        /// </summary>
         Hour,
+        /// <summary>
+        /// Custom expression. Need to fill also DataFormatExpression
+        /// </summary>
         Expression
     }
 
+    /// <summary>
+    /// Extension methods used by GridViewEx
+    /// </summary>
+    /// <remarks>
+    /// [{"Author": "Vicent Climent";
+    /// "Created Date": "08/03/2013"}]
+    /// </remarks>
     public static class Extensions
     {
+        /// <summary>
+        /// Create the multi-sorting query to the <paramref name="query"/> based on the <paramref name="sortExpressions"/>
+        /// </summary>
+        /// <param name="query">Query where to apply the sortings</param>
+        /// <param name="sortExpressions">Sort expressions</param>
         public static IQueryable<T> Order<T>(this IQueryable<T> query, List<SortExpression> sortExpressions)
         {
             if (sortExpressions != null)
             {
                 // x =>
                 var xParameter = Expression.Parameter(query.GetType(), "x");
-                
+
                 // x => x.DataParameter
                 var dataParameter = Expression.Parameter(query.AsQueryable().GetType().GetGenericArguments()[0], "x");
 
@@ -110,6 +235,13 @@ namespace GridViewEx
             return query;
         }
 
+        /// <summary>
+        /// Used to fill the filter dropdown list from the <paramref name="query"/>
+        /// </summary>
+        /// <param name="query">Query where to apply the sortings</param>
+        /// <param name="dataField">Column than we want the data</param>
+        /// <param name="dataFormat">Type of data</param>
+        /// <param name="dataFormatExpression">If we use a custom expression, here is where we pass it</param>
         internal static List<ListItem> GetDropDownDataSource<T>(this IQueryable<T> query, string dataField, DataFormatEnum dataFormat, string dataFormatExpression)
         {
             var ddlSource = new List<ListItem>();
@@ -215,6 +347,11 @@ namespace GridViewEx
             return ddlSource;
         }
 
+        /// <summary>
+        /// Create the multi-filter query to the <paramref name="query"/> based on the <paramref name="filterExpressions"/>
+        /// </summary>
+        /// <param name="query">Query where to apply the sortings</param>
+        /// <param name="filterExpressions">Filter expressions</param>
         public static IQueryable<T> Filter<T>(this IQueryable<T> query, List<FilterExpression> filterExpressions)
         {
             // Check if have any filter to apply
@@ -243,11 +380,11 @@ namespace GridViewEx
                     {
                         // Right side is our constant
                         var right = Expression.Constant(o, typeOfPropery);
-                        
+
                         // Apply .ToLower() if string, so search is no case sensitive
                         var toLowerLeft = typeOfPropery.GetMethod("ToLower", new Type[] { });
                         var toLowerRight = right.Type.GetMethod("ToLower", new Type[] { });
-                        
+
                         // Create the Filter expression
                         expr = (toLowerLeft != null && toLowerRight != null)
                             ? Expression.MakeBinary(expressionType, Expression.Call(left, toLowerLeft), Expression.Call(right, toLowerRight))
@@ -312,6 +449,10 @@ namespace GridViewEx
             return query;
         }
 
+        /// <summary>
+        /// Get the sort direction as a short string
+        /// </summary>
+        /// <param name="sortDirection">Query where to apply the sortings</param>
         internal static string ToSQLString(this SortDirection sortDirection)
         {
             return (sortDirection == SortDirection.Descending)
@@ -319,6 +460,12 @@ namespace GridViewEx
                 : "ASC";
         }
 
+        /// <summary>
+        /// Create the custom pager list
+        /// </summary>
+        /// <param name="totalRecordCount">Number of records</param>
+        /// <param name="pageIndex">Page index</param>
+        /// <param name="pageSize">Page size</param>
         internal static List<ListItem> FillPager(int totalRecordCount, int pageIndex, int pageSize)
         {
             var pages = new List<ListItem>();
@@ -359,6 +506,12 @@ namespace GridViewEx
             return pages;
         }
 
+        /// <summary>
+        /// Fill the custom pager size dropdownlist
+        /// </summary>
+        /// <param name="ddl">Dropdown list to fill</param>
+        /// <param name="pagerSelectorOptions">PagerSelectorOptions from the table definition</param>
+        /// <param name="pageSize">Page size</param>
         internal static void FillPageRecordsSelector(this DropDownList ddl, string[] pagerSelectorOptions, int pageSize)
         {
             ddl.Items.Clear();
@@ -384,6 +537,10 @@ namespace GridViewEx
                 });
         }
 
+        /// <summary>
+        /// Get the LINQ expression as string from the short filter expression
+        /// </summary>
+        /// <param name="filterExpression">Short filter expression</param>
         internal static string GetExpressionType(string filterExpression)
         {
             switch (filterExpression)
@@ -417,27 +574,40 @@ namespace GridViewEx
             }
         }
 
+        /// <summary>
+        /// Check if the short filter expression is valid
+        /// </summary>
+        /// <param name="filterExpression">Short filter expression</param>
         internal static bool IsValidExpressionType(string filterExpression)
         {
             string[] arr = new string[] { "=", "!=", ">", ">=", "<", "<=", "*", "!*", "˄", "!˄", "˅", "!˅" };
             return arr.Contains(filterExpression);
         }
 
+        /// <summary>
+        /// Export to Excel the <paramref name="source"/> data with the selected <paramref name="columns"/>
+        /// </summary>
+        /// <param name="source">List with the data</param>
+        /// <param name="columns">Selected columns to include on the file</param>
+        /// <param name="title">Optional title of the file. If no title, it use 'Export' instead</param>
         public static void ExportExcel(List<dynamic> source, List<ColumnExpression> columns, string title)
         {
-            var excel = GetExcel(source, columns, title);
-
             HttpContext.Current.Response.Clear();
             HttpContext.Current.Response.Buffer = true;
             HttpContext.Current.Response.Charset = "";
             HttpContext.Current.Response.Cache.SetCacheability(HttpCacheability.NoCache);
             HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            HttpContext.Current.Response.AddHeader("content-disposition", "attachment;  filename=" + title + ".xlsx");
-            HttpContext.Current.Response.BinaryWrite(excel);
+            HttpContext.Current.Response.AddHeader("content-disposition", "attachment; filename=" + HttpUtility.UrlEncode((String.IsNullOrWhiteSpace(title) ? "Export" : title) + ".xlsx"));
+            HttpContext.Current.Response.BinaryWrite(GetExcel(source, columns, title));
             HttpContext.Current.Response.Flush();
-            HttpContext.Current.Response.End();
         }
 
+        /// <summary>
+        /// Get an excel file from the <paramref name="source"/> data with the selected <paramref name="columns"/>
+        /// </summary>
+        /// <param name="source">List with the data</param>
+        /// <param name="columns">Selected columns to include on the file</param>
+        /// <param name="title">Optional title of the file. If no title, it use 'Export' instead</param>
         public static byte[] GetExcel(List<dynamic> source, List<ColumnExpression> columns, string title)
         {
             if (String.IsNullOrWhiteSpace(title))
@@ -460,7 +630,7 @@ namespace GridViewEx
                 PropertyInfo[] properties = source[0].GetType().GetProperties();
                 foreach (var column in columns.Where(x => x.Visible))
                 {
-                    var property = properties.SingleOrDefault(x => x.Name == column.ColumnName);
+                    var property = properties.SingleOrDefault(x => x.Name == column.Column);
                     if (property != null)
                         dt.Columns.Add(new DataColumn
                         {
@@ -478,7 +648,7 @@ namespace GridViewEx
                     foreach (var dc in dt.Columns)
                     {
                         // Check if the column is visible to incle it or not
-                        if (columns.Select(x => new { ColumnName = (string)x.ColumnName, Visible = (bool)x.Visible }).Any(x => x.ColumnName == dc.ToString() && x.Visible))
+                        if (columns.Select(x => new { ColumnName = (string)x.Column, Visible = (bool)x.Visible }).Any(x => x.ColumnName == dc.ToString() && x.Visible))
                             dr[dc.ToString()] = item.GetType().GetProperty(dc.ToString()).GetValue(item, null) ?? DBNull.Value;
                     }
 

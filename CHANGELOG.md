@@ -1,3 +1,12 @@
+## v1.1.2 (April 10, 2013)
+- Disabled export icon when no records to export.
+- Disabled filter icon when no records and no filters applied.
+- Improved views management adding some checkings.
+- Added all basic code documentation.
+- Added ability to show an alert message when an action happens, like when a view is saved.
+- Tested and working on Windows Azure. Just need to make sure your choose a good session configuration on your Web.Config as described on [https://www.simple-talk.com/cloud/platform-as-a-service/managing-session-state-in-windows-azure-what-are-the-options/](https://www.simple-talk.com/cloud/platform-as-a-service/managing-session-state-in-windows-azure-what-are-the-options/).
+- Bug fixes.
+
 ## v1.1.1 (April 1, 2013)
 - Added basic code documentation.
 - Removed massive use of 'this' keyword.

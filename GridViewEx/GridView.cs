@@ -10,29 +10,135 @@ using System.Web.UI.WebControls;
 
 namespace GridViewEx
 {
+    /// <summary>
+    /// Extended standard .NET GridView lot more functional and powerful than the original
+    /// </summary>
+    /// <remarks>
+    /// [{"Author": "Vicent Climent";
+    /// "Created Date": "08/03/2013"}]
+    /// </remarks>
     public class GridViewEx : GridView
     {
+        #region VARIABLES
+        /// <summary>
+        /// Stores the JS script for the whole table and print it only on one place at the end of the HTML table
+        /// </summary>
         internal string JSScript { get; set; }
+
+        /// <summary>
+        /// Stores the JS function calls to add them inside the JS BeginRequestHandler
+        /// </summary>
         internal string JSScriptBeginRequestHandler { get; set; }
+
+        /// <summary>
+        /// Stores the JS function calls to add them inside the JS EndRequestHandler
+        /// </summary>
         internal string JSScriptEndRequestHandler { get; set; }
+
+        /// <summary>
+        /// Stores the JS function calls to add them inside the JS jQuery DocumentReady
+        /// </summary>
         internal string JSScriptDocumentReady { get; set; }
 
+
+        /// <summary>
+        /// Used to title the table
+        /// </summary>
+        /// <remarks> 
+        /// The title is added inside the 'legend' tag of the 'fieldset'
+        /// </remarks> 
         public string Title { get; set; }
+
+        /// <summary>
+        /// Relative URL to a loading image on your project. If <see cref="LoadingImageUrl"/> is blank or NULL none image is used
+        /// </summary>
+        /// <example>  
+        /// LoadingImageUrl="~/Images/ajax-loader.gif"
+        /// </example> 
         public string LoadingImageUrl { get; set; }
+
+        /// <summary>
+        /// Used to set the default size of the table
+        /// </summary>
         public bool IsCompact { get; set; }
+
+        /// <summary>
+        /// Used to set if by default the inline filters will be displayed
+        /// </summary>
+        public bool IsFilterShown { get; set; }
+
+        /// <summary>
+        /// Set if the table should be CSS striped
+        /// </summary>
         public bool TableStriped { get; set; }
+
+        /// <summary>
+        /// Set if the table row should change the background while hovering
+        /// </summary>
         public bool TableHover { get; set; }
+
+        /// <summary>
+        /// Set the pager available option of the drop down list. By default is set to "10,50,100"
+        /// </summary>
+        /// <example>  
+        /// PagerSelectorOptions="5,10,20,40,80"
+        /// </example>
         public string PagerSelectorOptions { get; set; }
+
+        /// <summary>
+        /// Set the default Sort Expressions of the table
+        /// </summary>
+        /// <example>  
+        /// This sample shows how to call the <see cref="SortExpressions"/> method.
+        /// <code> 
+        /// gridViewEx.SortExpressions = new List&lt;SortExpression&gt;();
+        /// gridViewEx.SortExpressions.Add(new SortExpression
+        /// {
+        ///     Column = "Name",
+        ///     Direction = "DESC"
+        /// });
+        /// </code> 
+        /// </example> 
         public List<SortExpression> SortExpressions { get; set; }
+        #endregion
 
+        #region EVENTS
+        /// <summary>
+        /// Event fired when the sorting is changed
+        /// </summary>
         public event EventHandler SortingChanged;
-        public event EventHandler FilterDeleted;
-        public event EventHandler PageChanged;
-        public event EventHandler ColumnSelectionChanged;
-        public event EventHandler ExcelExport;
-        public event EventHandler ViewChanged;
 
-        // Init with our default options
+        /// <summary>
+        /// Event fired when all the filters are deleted
+        /// </summary>
+        public event EventHandler FilterDeleted;
+
+        /// <summary>
+        /// Event fired when the page index or page size is changed
+        /// </summary>
+        public event EventHandler PageChanged;
+
+        /// <summary>
+        /// Event fired when the column is moved or when the columns are shown/hide
+        /// </summary>
+        public event EventHandler ColumnSelectionChanged;
+
+        /// <summary>
+        /// Event fired when export the table to excel
+        /// </summary>
+        public event EventHandler ExcelExport;
+
+        /// <summary>
+        /// Event fired when the view is changed or when saving a new one
+        /// </summary>
+        public event EventHandler ViewChanged;
+        #endregion
+
+        #region OVERRIDE FUNCTIONS
+        /// <summary>
+        /// Override the Init function to add some default options
+        /// </summary>
+        /// <param name="e">Contains additional information about the event</param>
         protected override void OnInit(EventArgs e)
         {
             base.OnInit(e);
@@ -49,249 +155,53 @@ namespace GridViewEx
             AllowSorting = true;
             AutoGenerateColumns = false;
             ShowHeaderWhenEmpty = true;
+
             if (String.IsNullOrWhiteSpace(EmptyDataText))
                 EmptyDataText = "No data to display";
             if (String.IsNullOrWhiteSpace(PagerSelectorOptions))
                 PagerSelectorOptions = "10,50,100";
         }
 
+        /// <summary>
+        /// Override the Init function to call the <see cref="InitControls()"/> function
+        /// </summary>
+        /// <param name="e">Contains additional information about the event</param>
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-
-            // Reset the session when reload the grid unles ks is defined
-            if (!Page.IsPostBack)
-            {
-                bool keepSession = false;
-                bool.TryParse(Context.Request["ks"], out keepSession);
-
-                if (!keepSession)
-                {
-                    Context.Session[this.ID + "_PageIndex"] = PageIndex;
-                    Context.Session[this.ID + "_PageSize"] = PageSize;
-                    Context.Session[this.ID + "_SortExpressions"] = SortExpressions != null ? SortExpressions : new List<SortExpression>();
-                    Context.Session[this.ID + "_Filters"] = null;
-                    Context.Session[this.ID + "_Columns"] = null;
-                }
-            }
-
             InitControls();
         }
 
-        public void InitControls()
+        ///// <summary>
+        ///// Override the DataBinding function
+        ///// </summary>
+        //protected override void OnDataBinding(EventArgs e)
+        //{
+        //    //DataSource = GridViewExDataSource((IQueryable<object>)DataSource);
+        //    base.OnDataBinding(e);
+        //}
+
+        /// <summary>
+        /// Override the DataBound function to show the HTML table header as TH instead of TR
+        /// </summary>
+        /// <param name="e">Contains additional information about the event</param>
+        protected override void OnDataBound(EventArgs e)
         {
-            // Add export control
-            this.Controls.Add(CreateExportControl());
-
-            // Add sorting management control
-            this.Controls.Add(CreateSortingManagementControl());
-
-            // Add filter management control
-            this.Controls.Add(CreateFilterManagementControl());
-
-            // Add column management control
-            this.Controls.Add(CreateColumnManagementControl());
-
-            // Add view management control
-            this.Controls.Add(CreateViewManagementControl());
-
-            // Add pager control
-            this.Controls.Add(CreatePagerControl());
+            base.OnDataBound(e);
+            if (base.HeaderRow != null)
+                base.HeaderRow.TableSection = TableRowSection.TableHeader;
         }
 
-        public void SetView(ViewExpression view)
-        {
-            if (view != null)
-            {
-                Context.Session[this.ID + "_Columns"] = view.ColumnExpressions;
-                Context.Session[this.ID + "_Filters"] = view.FilterExpressions;
-                Context.Session[this.ID + "_SortExpressions"] = view.SortExpressions;
-                
-                if (view.PageSize != 0)
-                    Context.Session[this.ID + "_PageSize"] = view.PageSize;
-            }
-        }
-
-        public void LoadViews(List<ViewExpression> views)
-        {
-            Context.Session[this.ID + "_ViewExpressions"] = views;
-        }
-
-        protected override void Render(HtmlTextWriter writer)
-        {
-            var hlFilter = new HyperLink
-            {
-                NavigateUrl = "#",
-                CssClass = "btn pull-right",
-                ToolTip = "Filter",
-                Text = "<i class=\"icon-search\"></i>"
-            };
-            var hlCompactTable = new HyperLink
-            {
-                ID = "hl" + this.ClientID + "CompactTable",
-                ClientIDMode = ClientIDMode.Static,
-                NavigateUrl = "#",
-                CssClass = "btn pull-right",
-                ToolTip = "Compact Table",
-                Text = "<i class=\"icon-resize-small\"></i>"
-            };
-            var hlExpandTable = new HyperLink
-            {
-                ID = "hl" + this.ClientID + "ExpandTable",
-                ClientIDMode = ClientIDMode.Static,
-                NavigateUrl = "#",
-                CssClass = "btn hide pull-right",
-                ToolTip = "Expand Table",
-                Text = "<i class=\"icon-resize-full\"></i>"
-            };
-
-            hlFilter.Attributes.Add("onclick", "$('." + this.ClientID + "Filters').toggle();$('#" + this.ClientID + "Scrollbar').children('div').width($('#" + this.ClientID + @"GridViewTable').children('div').children('table')[0].scrollWidth);");
-
-            hlCompactTable.Attributes.Add("onclick", this.ClientID + "CompactTable(true);");
-            hlCompactTable.Attributes.Add("style", "margin-right: 10px;");
-
-            hlExpandTable.Attributes.Add("onclick", this.ClientID + "CompactTable(false);");
-            hlExpandTable.Attributes.Add("style", "margin-right: 10px;");
-
-            writer.Write("<div id=\"" + this.ClientID + "grid-view\" class=\"grid-view\">");
-            writer.Write("<div class=\"overlay\">");
-
-            // Check if the loading image is null, if so not add it
-            if (!String.IsNullOrWhiteSpace(LoadingImageUrl))
-            {
-                var imgLoader = new Image { ImageUrl = LoadingImageUrl };
-                imgLoader.RenderControl(writer);
-            }
-
-            writer.Write("</div>"); // End of .overlay
-
-            writer.Write("<fieldset><legend>" + Title);
-            hlFilter.RenderControl(writer);
-            hlCompactTable.RenderControl(writer);
-            hlExpandTable.RenderControl(writer);
-
-            if (base.Controls.Count == 7)
-            {
-                // Render export control
-                base.Controls[1].RenderControl(writer);
-                base.Controls[1].Visible = false;
-
-                // Render management sorting control
-                base.Controls[2].RenderControl(writer);
-                base.Controls[2].Visible = false;
-
-                // Render management filters control
-                base.Controls[3].RenderControl(writer);
-                base.Controls[3].Visible = false;
-
-                // Render management columns control
-                base.Controls[4].RenderControl(writer);
-                base.Controls[4].Visible = false;
-
-                // Render management views control
-                base.Controls[5].RenderControl(writer);
-                base.Controls[5].Visible = false;
-
-                base.Controls[6].Visible = false; // Hide because it should go after the table
-
-                writer.Write("</legend></fieldset><div id=\"" + this.ClientID + "GridViewTable\" class=\"grid-view-table\">");
-                base.Render(writer);
-                writer.Write("</div>"); // End of .grid-view-table
-
-                // Render pager control
-                base.Controls[6].Visible = true;
-                base.Controls[6].RenderControl(writer);
-                base.Controls[6].Visible = false;
-            }
-            else
-            {
-                writer.Write("</legend></fieldset><div class=\"grid-view-table\">");
-                base.Controls.Clear();
-                base.Render(writer);
-                writer.Write("</div>"); // End of .grid-view-table
-            }
-
-            writer.Write("</div>"); // End of .grid-view
-            writer.Write(@"<script type='text/javascript'>
-                var " + this.ClientID + @"SizeCompact = " + IsCompact.ToString().ToLower() + @";
-
-                Sys.WebForms.PageRequestManager.getInstance().add_beginRequest(" + this.ClientID + @"BeginRequestHandler);
-                Sys.WebForms.PageRequestManager.getInstance().add_endRequest(" + this.ClientID + @"EndRequestHandler);
-                
-                function " + this.ClientID + @"CompactTable(isCompact) {
-                    " + this.ClientID + @"SizeCompact = isCompact;
-                    if (isCompact) {
-                        $('#" + this.ClientID + @"').addClass('table-condensed');
-                        $('#" + hlExpandTable.ClientID + @"').show();
-                        $('#" + hlCompactTable.ClientID + @"').hide();
-                    }
-                    else {
-                        $('#" + this.ClientID + @"').removeClass('table-condensed');
-                        $('#" + hlExpandTable.ClientID + @"').hide();
-                        $('#" + hlCompactTable.ClientID + @"').show();
-                    }
-                    $('#" + this.ClientID + "Scrollbar').children('div').width($('#" + this.ClientID + @"GridViewTable').children('div').children('table')[0].scrollWidth);
-                }
-
-                function " + this.ClientID + @"SaveSearchExp(hfID, focusID, value) {
-                    $('#' + hfID).val(value);
-                    $('#' + focusID).focus();
-                }
-                " + JSScript + @"
-
-                function " + this.ClientID + @"BeginRequestHandler(sender, args) {
-                    $('#" + this.ClientID + @"grid-view .overlay')
-                        .width($('#" + this.ClientID + @"grid-view').width())
-                        .height($('#" + this.ClientID + @"grid-view').height())
-                        .show();
-                    " + JSScriptBeginRequestHandler + @"
-                }
-
-                function " + this.ClientID + @"EndRequestHandler(sender, args) {
-                    $('#" + this.ClientID + @"grid-view .overlay').hide();
-                    if (" + this.ClientID + @"SizeCompact)
-                        " + this.ClientID + @"CompactTable(true);
-                    " + this.ClientID + @"CreateTopScrollbar()
-                    " + JSScriptEndRequestHandler + @"
-                }
-
-                function " + this.ClientID + @"CreateTopScrollbar() {
-                    var element = $('#" + this.ClientID + @"GridViewTable');
-                    var scrollbar = $('<div></div>')
-                        .attr('id','" + this.ClientID + @"Scrollbar')
-                        
-                        .css('overflow-x', 'auto')
-                        .css('overflow-y', 'hidden')
-                        .append($('<div></div>')
-                            .width(element.children('div').children('table')[0].scrollWidth)
-                            .css('padding-top', '1px')
-                            .append($('\xA0')));
-                    scrollbar.scroll(function() {
-                        element.scrollLeft(scrollbar.scrollLeft());
-                    });
-                    element.scroll(function() {
-                        scrollbar.scrollLeft(element.scrollLeft());
-                    });
-                    element.before(scrollbar);
-                }
-
-                $(document).ready(function () {
-                    if (" + this.ClientID + @"SizeCompact)
-                        " + this.ClientID + @"CompactTable(true);
-
-                    " + this.ClientID + @"CreateTopScrollbar();
-                    " + JSScriptDocumentReady + @"
-                });
-            </script>");
-        }
-
-        // Show an icon next to the Header title when there's a sorting applied for that column
+        /// <summary>
+        /// Override the RowCreated function to show an icon next to the Header title when there's a sorting applied for that column
+        /// </summary>
+        /// <param name="e">Contains additional information about the event</param>
         protected override void OnRowCreated(GridViewRowEventArgs e)
         {
             base.OnRowCreated(e);
 
             // Check if we have filters to apply
-            var sortExpressions = ((List<SortExpression>)Context.Session[this.ID + "_SortExpressions"]);
+            var sortExpressions = Context.Session[ID + "_SortExpressions"] as List<SortExpression>;
             if (sortExpressions != null)
             {
                 // Use the RowType property to determine whether the row being created is the header row. 
@@ -346,24 +256,14 @@ namespace GridViewEx
             }
         }
 
-        protected override void OnDataBinding(EventArgs e)
-        {
-            //DataSource = GridViewExDataSource((IQueryable<object>)DataSource);
-            base.OnDataBinding(e);
-        }
-
-        // Show the header as TH instead of TR
-        protected override void OnDataBound(EventArgs e)
-        {
-            base.OnDataBound(e);
-            if (base.HeaderRow != null)
-                base.HeaderRow.TableSection = TableRowSection.TableHeader;
-        }
-
+        /// <summary>
+        /// Override the Sorting function to allow the multi column sorting feature
+        /// </summary>
+        /// <param name="e">Contains additional information about the event</param>
         protected override void OnSorting(GridViewSortEventArgs e)
         {
             // Get the defined sort expressions
-            var sortExpressions = Context.Session[this.ID + "_SortExpressions"] as List<SortExpression>;
+            var sortExpressions = Context.Session[ID + "_SortExpressions"] as List<SortExpression>;
             if (sortExpressions != null)
             {
                 // Check if we have defined this already. If have it assigned, change the direction else add the new one
@@ -399,637 +299,317 @@ namespace GridViewEx
             }
 
             // Update the result into the Session
-            Context.Session[this.ID + "_SortExpressions"] = sortExpressions;
+            Context.Session[ID + "_SortExpressions"] = sortExpressions;
             base.OnSorting(e);
 
             InitControls();
         }
 
-        public List<dynamic> GridViewExDataSource<T>(IQueryable<T> query, bool customOrder = false, bool isExport = false)
+        /// <summary>
+        /// Override the Render function to add all the new functions
+        /// </summary>
+        protected override void Render(HtmlTextWriter writer)
         {
-            if (!isExport)
+            var hlCompactTable = new HyperLink
             {
-                // Column management
-                if (Context.Session[this.ID + "_Columns"] == null)
+                ID = "hl" + ClientID + "CompactTable",
+                NavigateUrl = "#",
+                CssClass = "btn pull-right",
+                ToolTip = "Compact Table",
+                Text = "<i class=\"icon-resize-small\"></i>"
+            };
+            hlCompactTable.Attributes.Add("onclick", ClientID + "CompactTable(true);");
+            hlCompactTable.Attributes.Add("style", "margin-right: 10px;");
+
+            var hlExpandTable = new HyperLink
+            {
+                ID = "hl" + ClientID + "ExpandTable",
+                NavigateUrl = "#",
+                CssClass = "btn hide pull-right",
+                ToolTip = "Expand Table",
+                Text = "<i class=\"icon-resize-full\"></i>"
+            };
+            hlExpandTable.Attributes.Add("onclick", ClientID + "CompactTable(false);");
+            hlExpandTable.Attributes.Add("style", "margin-right: 10px;");
+
+            // Render the table wrap and the overlay which is shown on the AJAX calls
+            writer.Write("<div id=\"" + ClientID + "grid-view\" class=\"grid-view\"><div class=\"overlay\">");
+
+            // Check if the loading image is null, if so not add it
+            if (!String.IsNullOrWhiteSpace(LoadingImageUrl))
+            {
+                var imgLoader = new Image { ImageUrl = LoadingImageUrl };
+                imgLoader.RenderControl(writer);
+            }
+
+            // Render the close tag for overlay and the title
+            writer.Write("</div><!-- .overlay --><fieldset><legend>" + Title);
+
+            // Render filter icon. Disable the filter function if no records and no filters applied
+            if (Rows.Count == 0
+                && Context.Session[ID + "_Filters"] == null)
+                writer.Write("<a class=\"btn pull-right disabled\" title=\"Filter\"><i class=\"icon-search\"></i></a>");
+            else
+                writer.Write("<a href=\"#\" class=\"btn pull-right\" title=\"Filter\" onclick=\"" + ClientID + "ToggleInlineFilter();\"><i class=\"icon-search\"></i></a>");
+
+            // Render compact/expand icons
+            hlCompactTable.RenderControl(writer);
+            hlExpandTable.RenderControl(writer);
+
+            if (base.Controls.Count == 7)
+            {
+                // Render export control
+                base.Controls[1].RenderControl(writer);
+                base.Controls[1].Visible = false;
+
+                // Render management sorting control
+                base.Controls[2].RenderControl(writer);
+                base.Controls[2].Visible = false;
+
+                // Render management filters control
+                base.Controls[3].RenderControl(writer);
+                base.Controls[3].Visible = false;
+
+                // Render management columns control
+                base.Controls[4].RenderControl(writer);
+                base.Controls[4].Visible = false;
+
+                // Render management views control
+                base.Controls[5].RenderControl(writer);
+                base.Controls[5].Visible = false;
+
+                base.Controls[6].Visible = false; // Hide because it should go after the table
+
+                writer.Write("</legend></fieldset><div id=\"" + ClientID + "GridViewTable\" class=\"grid-view-table\">");
+
+                // Render message alerts
+                var cookie = Page.Request.Cookies[ID + "_AlertMessage"];
+                if (cookie != null)
                 {
-                    var columns = new List<ColumnExpression>();
-                    var index = 0;
-                    foreach (var column in this.Columns)
-                    {
-                        var gridViewExColumn = column as ColumnEx;
-                        var boundColumn = column as BoundColumn;
-
-                        if (gridViewExColumn != null)
-                            columns.Add(new ColumnExpression
-                            {
-                                ColumnName = gridViewExColumn.DataField,
-                                DisplayName = gridViewExColumn.HeaderText,
-                                Visible = gridViewExColumn.Visible,
-                                Type = "ColumnEx",
-                                Index = index,
-                                DataFormat = gridViewExColumn.DataFormat,
-                                DataFormatExpression = gridViewExColumn.DataFormatExpression
-                            });
-                        else if (boundColumn != null)
-                            columns.Add(new ColumnExpression
-                            {
-                                ColumnName = boundColumn.DataField,
-                                DisplayName = boundColumn.HeaderText,
-                                Visible = boundColumn.Visible,
-                                Type = "BoundField",
-                                Index = index,
-                                DataFormat = DataFormatEnum.Text,
-                                DataFormatExpression = String.Empty
-                            });
-
-                        index++;
-                    }
-
-                    Context.Session[this.ID + "_Columns"] = columns;
+                    writer.Write("<div id=\"" + ClientID + "AlertMessage\" class=\"alert alert-success fade in\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\">×</button>");
+                    writer.Write(HttpUtility.UrlDecode(cookie.Value));
+                    writer.Write("</div>");
                 }
                 else
-                {
-                    foreach (var sessionColumn in (List<ColumnExpression>)Context.Session[this.ID + "_Columns"])
-                    {
-                        var index = 0;
-                        foreach (var column in this.Columns)
-                        {
-                            var flag = false;
-                            switch (sessionColumn.Type)
-                            {
-                                case "ColumnEx":
-                                    var gridViewExColumn = column as ColumnEx;
-                                    if (gridViewExColumn != null
-                                        && gridViewExColumn.DataField == sessionColumn.ColumnName)
-                                    {
-                                        gridViewExColumn.Visible = sessionColumn.Visible;
+                    writer.Write("<div id=\"" + ClientID + "AlertMessage\" class=\"alert fade in hide\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\">×</button></div>");
 
-                                        if (sessionColumn.Index != index)
-                                        {
-                                            var col = this.Columns[index];
-                                            this.Columns.Remove(col);
-                                            this.Columns.Insert(sessionColumn.Index, col);
-                                            flag = true;
-                                        }
-                                    }
-                                    break;
-                                case "BoundField":
-                                    var boundColumn = column as BoundColumn;
-                                    if (boundColumn != null
-                                        && boundColumn.DataField == sessionColumn.ColumnName)
-                                    {
-                                        boundColumn.Visible = sessionColumn.Visible;
+                base.Render(writer);
+                writer.Write("</div><!-- .grid-view-table -->");
 
-                                        if (sessionColumn.Index != index)
-                                        {
-                                            var col = this.Columns[index];
-                                            this.Columns.Remove(col);
-                                            this.Columns.Insert(sessionColumn.Index, col);
-                                            flag = true;
-                                        }
-                                    }
-                                    break;
+                // Render pager control
+                base.Controls[6].Visible = true;
+                base.Controls[6].RenderControl(writer);
+                base.Controls[6].Visible = false;
+            }
+            else
+            {
+                writer.Write("</legend></fieldset><div id=\"" + ClientID + "GridViewTable\" class=\"grid-view-table\">");
+                base.Controls.Clear();
+                base.Render(writer);
+                writer.Write("</div><!-- .grid-view-table -->");
+            }
+
+            writer.Write(@"</div><!-- .grid-view -->
+            <script type='text/javascript'>
+                var " + ClientID + @"SizeCompact = " + IsCompact.ToString().ToLower() + @";
+                var " + ClientID + @"IsFilterShown = " + IsFilterShown.ToString().ToLower() + @";
+
+                Sys.WebForms.PageRequestManager.getInstance().add_beginRequest(" + ClientID + @"BeginRequestHandler);
+                Sys.WebForms.PageRequestManager.getInstance().add_endRequest(" + ClientID + @"EndRequestHandler);
+
+                function " + ClientID + @"ToggleInlineFilter(isVisible) {
+                    if (typeof isVisible != 'undefined') {
+                        " + ClientID + @"IsFilterShown = isVisible;
+                        if (isVisible) {
+                            $('." + ClientID + @"Filters').show();
+                        }
+                        else {
+                            $('." + ClientID + @"Filters').hide();
+                        }
+                    }
+                    else {
+                        " + ClientID + @"IsFilterShown = !" + ClientID + @"IsFilterShown;
+                        $('." + ClientID + @"Filters').toggle();
+                    }
+                    $('#" + ClientID + @"Scrollbar')
+                        .children('div')
+                        .width($('#" + ClientID + @"GridViewTable')
+                            .children('div')
+                            .children('table')[0]
+                            .scrollWidth);
+                }
+                
+                function " + ClientID + @"CompactTable(isCompact) {
+                    " + ClientID + @"SizeCompact = isCompact;
+                    if (isCompact) {
+                        $('#" + ClientID + @"').addClass('table-condensed');
+                        $('#" + hlExpandTable.ClientID + @"').show();
+                        $('#" + hlCompactTable.ClientID + @"').hide();
+                    }
+                    else {
+                        $('#" + ClientID + @"').removeClass('table-condensed');
+                        $('#" + hlExpandTable.ClientID + @"').hide();
+                        $('#" + hlCompactTable.ClientID + @"').show();
+                    }
+                    $('#" + ClientID + @"Scrollbar')
+                        .children('div')
+                        .width($('#" + ClientID + @"GridViewTable')
+                            .children('div')
+                            .children('table')[0]
+                            .scrollWidth);
+                }
+
+                function " + ClientID + @"CreateTopScrollbar() {
+                    var element = $('#" + ClientID + @"GridViewTable');
+                    var scrollbar = $('<div></div>')
+                        .attr('id','" + ClientID + @"Scrollbar')
+                        .css('overflow-x', 'auto')
+                        .css('overflow-y', 'hidden')
+                        .append($('<div></div>')
+                            .width(element
+                                .children('div')
+                                .children('table')[0]
+                                .scrollWidth)
+                            .css('padding-top', '1px')
+                            .append('\xA0'));
+                    scrollbar.scroll(function() {
+                        element.scrollLeft(scrollbar.scrollLeft());
+                    });
+                    element.scroll(function() {
+                        scrollbar.scrollLeft(element.scrollLeft());
+                    });
+                    element.before(scrollbar);
+                }
+
+                function " + ClientID + @"Popover(hoverElementID, divElementID) {
+                    $(hoverElementID).popover({
+                        html: true,
+                        trigger: 'manual',
+                        placement: 'bottom',
+                        content: function () {
+                            return $(divElementID).html();
+                        }
+                    });
+
+                    var timer, popover_parent;
+
+                    $(hoverElementID).hover(function () {
+                        clearTimeout(timer);
+                        $('.popover').hide(); //Hide any open popovers on other elements.
+                        popover_parent = this
+                        $(this).popover('show');
+                    },
+                        function () {
+                            timer = setTimeout(function () { $(this).popover('hide'); }, 300);
+                        });
+
+                    $('.popover').live({
+                        mouseover: function () {
+                            clearTimeout(timer);
+                        },
+                        mouseleave: function () {
+                            timer = setTimeout(function () { $(popover_parent).popover('hide'); }, 300);
+                        }
+                    });
+                }
+
+                function " + ClientID + @"SaveSearchExp(hfID, focusID, value) {
+                    $('#' + hfID).val(value);
+                    $('#' + focusID).focus();
+                }
+
+                function " + ClientID + @"SaveView(modalID, txtViewNameID, divViewCheckBoxesID, divAlertID) {
+                    var isViewValid = true;
+                    var viewCheckBoxes = $(divViewCheckBoxesID).find('input[type=\'checkbox\']');
+                    
+                    isViewValid = ($(txtViewNameID).val().length > 0);
+
+                    var count = 0;
+                    $.map(viewCheckBoxes, function (elementOfArray, indexInArray) {
+                        if($(elementOfArray).is(':checked'))
+                            count++;
+                    });
+
+                    if (viewCheckBoxes.length >= 1
+                        && count <= 0)
+                        isViewValid = false;
+
+                    if (isViewValid) {
+                        var d = new Date();
+                        var d2 = new Date(d.getTime() + 5 * 60000); // 5 minutes
+                        document.cookie = '" + ID + @"_AlertMessage=' + escape('View Saved!') + '; expires=' + d2.toUTCString() + '; path=';
+
+                        $(modalID).modal('hide');
+                        return true;
+                    }
+                    else {
+                        if ($(txtViewNameID).val().length <= 0) {
+                            if ($(divAlertID).length <= 0)
+                                $(txtViewNameID).parent().parent().next().children('div:first-child').append('<div id=\'' + divAlertID.substring(1, divAlertID.length) + '\' class=\'alert alert-error fade in\' style=\'font-size: 14px;line-height: 20px;\'><button class=\'close\' data-dismiss=\'alert\'>x</button><div>Must provide a name</div></div>');
+                            else {
+                                $(divAlertID).children('div').html('Must provide a name');
+                                $(divAlertID).show();
                             }
 
-                            index++;
-                            if (flag)
-                                break;
+                            $(txtViewNameID).css('border-color','#B94A48')
+                                .css('color','#B94A48')
+                                .focus();
                         }
+                        else if (viewCheckBoxes.length >= 1
+                            && count <= 0) {
+                            if ($(divAlertID).length <= 0)
+                                $(txtViewNameID).parent().parent().next().children('div:first-child').append('<div id=\'' + divAlertID.substring(1, divAlertID.length) + '\' class=\'alert alert-error fade in\' style=\'font-size: 14px;line-height: 20px;\'><button class=\'close\' data-dismiss=\'alert\'>x</button><div>Must select at least one option</div></div>');
+                            else {
+                                $(divAlertID).children('div').html('Must select at least one option');
+                                $(divAlertID).show();
+                            }
+
+                            $.map(viewCheckBoxes, function (elementOfArray, indexInArray) {
+                                $(elementOfArray).parent().css('color','#B94A48');
+                            });
+                        }
+                        
+                        return false;
                     }
                 }
 
-                int pageSize = Context.Session[this.ID + "_PageSize"] != null
-                    ? Convert.ToInt32(Context.Session[this.ID + "_PageSize"])
-                    : PageSize;
-                int pageIndex = Context.Session[this.ID + "_PageIndex"] != null
-                    ? Convert.ToInt32(Context.Session[this.ID + "_PageIndex"])
-                    : PageIndex;
-
-                Context.Session[this.ID + "_PageIndex"] = pageIndex;
-                Context.Session[this.ID + "_PageSize"] = pageSize;
-
-                int startRow = pageIndex * pageSize;
-
-                // Save filters data for later access
-                foreach (var column in this.Columns)
-                {
-                    var gridViewExColumn = column as ColumnEx;
-                    if (gridViewExColumn != null
-                        && gridViewExColumn.SearchType == SearchTypeEnum.DropDownList
-                        && gridViewExColumn.DropDownDataSource == null)
-                    {
-                        gridViewExColumn.DropDownDataSource = query.GetDropDownDataSource(gridViewExColumn.DataField, gridViewExColumn.DataFormat, gridViewExColumn.DataFormatExpression);
-                    }
+                function " + ClientID + @"DeleteAlert() {
+                    var d = new Date();
+                    document.cookie = '" + ID + @"_AlertMessage=; expires=' + d.toUTCString();
                 }
 
-                query = query.Filter((List<FilterExpression>)Context.Session[this.ID + "_Filters"]); // Apply filters
-
-                // Count total records
-                Context.Session[this.ID + "_Records"] = query.Count();
-
-                if (!customOrder)
-                {
-                    // Sort the rows
-                    var sourceIQueryable = (IQueryable<dynamic>)query.Order((List<SortExpression>)Context.Session[this.ID + "_SortExpressions"]);
-
-                    // Page the query if necessary
-                    sourceIQueryable = sourceIQueryable.Skip(startRow).Take(pageSize);
-
-                    // Finally return list
-                    return sourceIQueryable.ToList<dynamic>();
-                }
-                else
-                {
-                    // Page the query if necessary
-                    query = query.Skip(startRow).Take(pageSize);
-
-                    // Finally return list
-                    return ((IQueryable<dynamic>)query).ToList<dynamic>();
-                }
-            }
-            else
-            {
-                query = query.Filter((List<FilterExpression>)Context.Session[this.ID + "_Filters"]); // Apply filters
-                return (!customOrder)
-                    ? ((IQueryable<dynamic>)query.Order((List<SortExpression>)Context.Session[this.ID + "_SortExpressions"])).ToList<dynamic>()
-                    : ((IQueryable<dynamic>)query).ToList<dynamic>();
-            }
-        }
-
-        #region CONTROL CREATION
-        private Control CreateExportControl()
-        {
-            var phControl = new PlaceHolder();
-
-            var lbExport = new LinkButton
-            {
-                ID = "hl" + this.ClientID + "Export",
-                ClientIDMode = ClientIDMode.Static,
-                CssClass = "btn pull-right",
-                ToolTip = "Export to Excel",
-                Text = "<i class=\"icon-download\"></i>"
-            };
-            lbExport.Click += lbExport_Click;
-            lbExport.Attributes.Add("style", "margin-right: 10px;");
-
-            phControl.Controls.Add(lbExport);
-
-            // In case user use UpdatePanel register a normal postback if not it fails
-            ScriptManager.GetCurrent(Page).RegisterPostBackControl(lbExport);
-            return phControl;
-        }
-
-        private Control CreateFilterManagementControl()
-        {
-            var filters = (List<FilterExpression>)Context.Session[this.ID + "_Filters"] != null
-                ? (List<FilterExpression>)Context.Session[this.ID + "_Filters"]
-                : new List<FilterExpression>();
-
-            var phControl = new PlaceHolder();
-
-            var hlFilterSelection = new HtmlAnchor
-            {
-                ID = "hl" + this.ID + "FilterSelection",
-                ClientIDMode = ClientIDMode.Static,
-                HRef = "#",
-                Title = "Filter Management",
-                InnerHtml = "<i class=\"icon-filter\"></i>"
-            };
-            hlFilterSelection.Attributes.Add("class", "btn pull-right");
-            hlFilterSelection.Attributes.Add("style", "margin-right: 10px;");
-            if (filters.Count >= 1)
-                hlFilterSelection.Attributes["style"] += "background-color: #B2C6E0;";
-
-            phControl.Controls.Add(hlFilterSelection);
-
-            var divFilterSelection = new HtmlGenericControl("div");
-            divFilterSelection.ID = "div" + this.ID + "FilterSelection";
-            divFilterSelection.ClientIDMode = ClientIDMode.Static;
-            divFilterSelection.Attributes.Add("style", "display: none;");
-
-            var lbRemoveAll = new LinkButton
-            {
-                Text = "Remove All",
-                ToolTip = "Remove all sortings",
-                Visible = filters.Count >= 1
-            };
-            lbRemoveAll.Click += lbFilterRemoveAll_Click;
-            divFilterSelection.Controls.Add(lbRemoveAll);
-
-            var ul = new HtmlGenericControl("ul");
-
-            if (filters.Count >= 1)
-            {
-                foreach (var filterExpression in filters)
-                {
-                    var r = new Regex(@"
-                    (?<=[A-Z])(?=[A-Z][a-z]) |
-                    (?<=[^A-Z])(?=[A-Z]) |
-                    (?<=[A-Za-z])(?=[^A-Za-z])", RegexOptions.IgnorePatternWhitespace);
-
-                    var liFilter = new HtmlGenericControl("li");
-
-                    var lbRemove = new LinkButton
-                    {
-                        Text = "<i class=\"icon-remove\"></i>",
-                        ToolTip = "Remove",
-                        CommandArgument = filterExpression.Column + "|" + filterExpression.ExpressionShortName + "|" + filterExpression.Text
-                    };
-                    lbRemove.Click += lbFilterRemove_Click;
-                    liFilter.Controls.Add(lbRemove);
-
-                    liFilter.Controls.Add(new Literal
-                    {
-                        Text = String.Format("{0} {1} '{2}'",
-                            filterExpression.DisplayName,
-                            r.Replace(filterExpression.Expression, " ").ToLower(),
-                            filterExpression.Text)
-                    });
-
-                    ul.Controls.Add(liFilter);
-                }
-
-                divFilterSelection.Controls.Add(ul);
-            }
-            else
-                divFilterSelection.Controls.Add(new Label { Text = "No filters" });
-
-            phControl.Controls.Add(divFilterSelection);
-
-            JSScript += @"
-                function " + this.ClientID + @"FilterPopover() {
-                    $('#" + hlFilterSelection.ClientID + @"').popover({
-                        html: true,
-                        trigger: 'manual',
-                        placement: 'bottom',
-                        content: function () {
-                            return $('#div" + this.ID + @"FilterSelection').html();
-                        }
-                    });
-
-                    var timer, popover_parent;
-
-                    $('#" + hlFilterSelection.ClientID + @"').hover(function () {
-                        clearTimeout(timer);
-                        $('.popover').hide(); //Hide any open popovers on other elements.
-                        popover_parent = this
-                        $(this).popover('show');
-                    },
-                        function () {
-                            timer = setTimeout(function () { $(this).popover('hide'); }, 300);
-                        });
-
-                    $('.popover').live({
-                        mouseover: function () {
-                            clearTimeout(timer);
-                        },
-                        mouseleave: function () {
-                            timer = setTimeout(function () { $(popover_parent).popover('hide'); }, 300);
-                        }
-                    });
-                }";
-
-            JSScriptEndRequestHandler += this.ClientID + @"FilterPopover();";
-            JSScriptDocumentReady += this.ClientID + @"FilterPopover();";
-
-            return phControl;
-        }
-
-        private Control CreateSortingManagementControl()
-        {
-            var sortings = (List<SortExpression>)Context.Session[this.ID + "_SortExpressions"] != null
-                ? (List<SortExpression>)Context.Session[this.ID + "_SortExpressions"]
-                : new List<SortExpression>();
-
-            var phControl = new PlaceHolder();
-
-            var hlSortSelection = new HtmlAnchor
-            {
-                ID = "hl" + this.ID + "SortSelection",
-                ClientIDMode = ClientIDMode.Static,
-                HRef = "#",
-                Title = "Sorting Management",
-                InnerHtml = "<i class=\"icon-list-alt\"></i>",
-            };
-            hlSortSelection.Attributes.Add("class", "btn pull-right");
-            hlSortSelection.Attributes.Add("style", "margin-right: 10px;");
-            if (sortings.Count >= 1)
-                hlSortSelection.Attributes["style"] += "background-color: #B2C6E0;";
-
-            phControl.Controls.Add(hlSortSelection);
-
-            var divSortSelection = new HtmlGenericControl("div");
-            divSortSelection.ID = "div" + this.ID + "SortSelection";
-            divSortSelection.ClientIDMode = ClientIDMode.Static;
-            divSortSelection.Attributes.Add("style", "display: none;");
-
-            var lbRemoveAll = new LinkButton
-            {
-                Text = "Remove All",
-                ToolTip = "Remove all sortings",
-                Visible = sortings.Count >= 1
-            };
-            lbRemoveAll.Click += lbSortingRemoveAll_Click;
-            divSortSelection.Controls.Add(lbRemoveAll);
-
-            var ol = new HtmlGenericControl("ol");
-
-            if (sortings.Count >= 1)
-            {
-                foreach (var sortExpression in sortings)
-                {
-                    var liSort = new HtmlGenericControl("li");
-
-                    var lbRemove = new LinkButton
-                    {
-                        Text = "<i class=\"icon-remove\"></i>",
-                        ToolTip = "Remove",
-                        CommandArgument = sortExpression.Column
-                    };
-                    lbRemove.Click += lbSortingRemove_Click;
-                    liSort.Controls.Add(lbRemove);
-
-                    var lbChangeIndexUp = new LinkButton
-                    {
-                        Text = "<i class=\"icon-arrow-up\"></i>",
-                        ToolTip = "Up",
-                        CommandArgument = sortExpression.Column,
-                        Visible = sortings.Count > 1
-                            && sortings.IndexOf(sortExpression) != 0
-                    };
-                    lbChangeIndexUp.Click += lbSortingChangeIndexUp_Click;
-                    liSort.Controls.Add(lbChangeIndexUp);
-
-                    var lbChangeIndexDown = new LinkButton
-                    {
-                        Text = "<i class=\"icon-arrow-down\"></i>",
-                        ToolTip = "Down",
-                        CommandArgument = sortExpression.Column,
-                        Visible = sortings.Count > 1
-                            && sortings.IndexOf(sortExpression) != sortings.Count - 1
-                    };
-                    lbChangeIndexDown.Click += lbSortingChangeIndexDown_Click;
-                    liSort.Controls.Add(lbChangeIndexDown);
-
-                    liSort.Controls.Add(new Literal { Text = String.Format("{0} - {1}", sortExpression.Column, sortExpression.Direction) });
-
-                    ol.Controls.Add(liSort);
-                }
-
-                divSortSelection.Controls.Add(ol);
-            }
-            else
-                divSortSelection.Controls.Add(new Label { Text = "No sortings" });
-
-            phControl.Controls.Add(divSortSelection);
-
-            JSScript += @"
-                function " + this.ClientID + @"SortPopover() {
-                    $('#" + hlSortSelection.ClientID + @"').popover({
-                        html: true,
-                        trigger: 'manual',
-                        placement: 'bottom',
-                        content: function () {
-                            return $('#div" + this.ID + @"SortSelection').html();
-                        }
-                    });
-
-                    var timer, popover_parent;
-
-                    $('#" + hlSortSelection.ClientID + @"').hover(function () {
-                        clearTimeout(timer);
-                        $('.popover').hide(); //Hide any open popovers on other elements.
-                        popover_parent = this
-                        $(this).popover('show');
-                    },
-                        function () {
-                            timer = setTimeout(function () { $(this).popover('hide'); }, 300);
-                        });
-
-                    $('.popover').live({
-                        mouseover: function () {
-                            clearTimeout(timer);
-                        },
-                        mouseleave: function () {
-                            timer = setTimeout(function () { $(popover_parent).popover('hide'); }, 300);
-                        }
-                    });
-                }";
-
-            JSScriptEndRequestHandler += this.ClientID + @"SortPopover();";
-            JSScriptDocumentReady += this.ClientID + @"SortPopover();";
-
-            return phControl;
-        }
-
-        private Control CreateColumnManagementControl()
-        {
-            var columns = (List<ColumnExpression>)Context.Session[this.ID + "_Columns"] != null
-                ? (List<ColumnExpression>)Context.Session[this.ID + "_Columns"]
-                : new List<ColumnExpression>();
-
-            var phControl = new PlaceHolder();
-
-            var hlColumnSelection = new HtmlAnchor
-            {
-                ID = "hl" + this.ID + "ColumnSelection",
-                ClientIDMode = ClientIDMode.Static,
-                HRef = "#",
-                Title = "Column Management",
-                InnerHtml = "<i class=\"icon-calendar\"></i>"
-            };
-            hlColumnSelection.Attributes.Add("class", "btn pull-right");
-            hlColumnSelection.Attributes.Add("style", "margin-right: 10px;");
-            phControl.Controls.Add(hlColumnSelection);
-
-            var js = new JavaScriptSerializer();
-
-            var hfColumnsSelected = new HiddenField
-            {
-                ID = "hf" + this.ID + "ColumnsSelected",
-                ClientIDMode = ClientIDMode.Static,
-                Value = js.Serialize(columns)
-            };
-            phControl.Controls.Add(hfColumnsSelected);
-
-            var divColumnSelection = new HtmlGenericControl("div");
-            divColumnSelection.ID = "div" + this.ID + "ColumnSelection";
-            divColumnSelection.ClientIDMode = ClientIDMode.Static;
-            divColumnSelection.Attributes.Add("style", "display: none;");
-
-            var hlHideAll = new HtmlAnchor
-            {
-                ID = "hl" + this.ID + "HideAll",
-                ClientIDMode = ClientIDMode.Static,
-                HRef = "#",
-                InnerText = "Hide All",
-                Title = "Hide all columns",
-                Visible = columns.Count >= 1
-            };
-            hlHideAll.Attributes.Add("onclick", "ColumnSelectionShowAll(this, false);");
-
-            var hlShowAll = new HtmlAnchor
-            {
-                ID = "hl" + this.ID + "ShowAll",
-                ClientIDMode = ClientIDMode.Static,
-                HRef = "#",
-                InnerText = "Show All",
-                Title = "Show all columns",
-                Visible = columns.Count >= 1
-            };
-            hlShowAll.Attributes.Add("onclick", "ColumnSelectionShowAll(this, true);");
-
-            var isAllVisible = true;
-            foreach (var column in columns)
-                if (!column.Visible)
-                {
-                    isAllVisible = false;
-                    break;
-                }
-
-            if (isAllVisible)
-                hlShowAll.Attributes.Add("style", "display: none;");
-            else
-                hlHideAll.Attributes.Add("style", "display: none;");
-
-            divColumnSelection.Controls.Add(hlHideAll);
-            divColumnSelection.Controls.Add(hlShowAll);
-
-            var lbApply = new LinkButton
-            {
-                ID = "lb" + this.ID + "Apply",
-                ClientIDMode = ClientIDMode.Static,
-                Text = "Apply",
-                ToolTip = "Apply changes",
-                Visible = columns.Count >= 1
-            };
-            lbApply.Attributes.Add("style", "display: none;float: right;");
-            lbApply.Click += lbColumnApply_Click;
-            divColumnSelection.Controls.Add(lbApply);
-
-            if (columns.Count >= 1)
-            {
-                var ol = new HtmlGenericControl("ol");
-
-                foreach (var column in columns)
-                {
-                    var liColumn = new HtmlGenericControl("li");
-
-                    var cbVisible = new HtmlInputCheckBox
-                    {
-                        Checked = column.Visible
-                    };
-                    cbVisible.Attributes.Add("title", "Check to make it visible");
-                    cbVisible.Attributes.Add("onclick", "ColumnSelectionChanged(this);");
-                    cbVisible.Attributes.Add("data-field", column.ColumnName);
-                    cbVisible.Attributes.Add("data-index", column.Index.ToString());
-                    liColumn.Controls.Add(cbVisible);
-
-                    var lbChangeIndexUp = new HtmlAnchor
-                    {
-                        InnerHtml = "<i class=\"icon-arrow-up\"></i>",
-                        Title = "Up"
-                    };
-
-                    if (columns.Count <= 1
-                        || columns.IndexOf(column) == 0)
-                        lbChangeIndexUp.Attributes.Add("style", "visibility: hidden;");
-
-                    lbChangeIndexUp.Attributes.Add("data-action", "up");
-                    lbChangeIndexUp.Attributes.Add("onclick", "ColumnIndexChanged(this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) - 1);");
-                    liColumn.Controls.Add(lbChangeIndexUp);
-
-                    var lbChangeIndexDown = new HtmlAnchor
-                    {
-                        InnerHtml = "<i class=\"icon-arrow-down\"></i>",
-                        Title = "Down"
-                    };
-                    if (columns.Count <= 1
-                        || columns.IndexOf(column) == columns.Count - 1)
-                        lbChangeIndexDown.Attributes.Add("style", "visibility: hidden;");
-
-                    lbChangeIndexDown.Attributes.Add("data-action", "down");
-                    lbChangeIndexDown.Attributes.Add("onclick", "ColumnIndexChanged(this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) + 1);");
-                    liColumn.Controls.Add(lbChangeIndexDown);
-
-                    liColumn.Controls.Add(new Literal { Text = column.DisplayName });
-
-                    ol.Controls.Add(liColumn);
-                }
-
-                divColumnSelection.Controls.Add(ol);
-            }
-            else
-                divColumnSelection.Controls.Add(new Label { Text = "No columns" });
-
-            phControl.Controls.Add(divColumnSelection);
-
-            JSScript += @"
-                function " + this.ClientID + @"ColumnPopover() {
-                    $('#" + hlColumnSelection.ClientID + @"').popover({
-                        html: true,
-                        trigger: 'manual',
-                        placement: 'bottom',
-                        content: function () {
-                            return $('#div" + this.ID + @"ColumnSelection').html();
-                        }
-                    });
-
-                    var timer, popover_parent;
-
-                    $('#" + hlColumnSelection.ClientID + @"').hover(function () {
-                        clearTimeout(timer);
-                        $('.popover').hide(); //Hide any open popovers on other elements.
-                        popover_parent = this
-                        $(this).popover('show');
-                    },
-                        function () {
-                            timer = setTimeout(function () { $(this).popover('hide'); }, 300);
-                        });
-
-                    $('.popover').live({
-                        mouseover: function () {
-                            clearTimeout(timer);
-                        },
-                        mouseleave: function () {
-                            timer = setTimeout(function () { $(popover_parent).popover('hide'); }, 300);
-                        }
-                    });
-                }
-
-                function ColumnSelectionShowAll(link, showAll) {
-                    var arr = JSON.parse($('#hf" + this.ID + @"ColumnsSelected').val());
+                function " + ClientID + @"ColumnSelectionShowAll(link, isShowAll, hfColumnsSelectedID, lbApplyID) {
+                    var arr = JSON.parse($(hfColumnsSelectedID).val());
                     
                     $(link).parent().children('ol').children().each(function () {
-                        $(this).children('input:checkbox').prop('checked', showAll);
+                        $(this).children('input:checkbox').prop('checked', isShowAll);
                     });
 
                     $.map(arr, function (elementOfArray, indexInArray) {
-                        elementOfArray.Visible = showAll;
+                        elementOfArray.Visible = isShowAll;
                     });
 
-                    $('#hf" + this.ID + @"ColumnsSelected').val(JSON.stringify(arr));
-                    document.cookie = '" + this.ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
-                    $('#" + hlHideAll.ClientID + @", #" + hlShowAll.ClientID + @"').toggle();
-                    $('#" + lbApply.ClientID + @"').show();
+                    $(hfColumnsSelectedID).val(JSON.stringify(arr));
+                    document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
+                    $(lbApplyID).show();
                 }
 
-                function ColumnSelectionChanged(cb) {
-                    var arr = JSON.parse($('#hf" + this.ID + @"ColumnsSelected').val());
+                function " + ClientID + @"ColumnSelectionChanged(cb, hfColumnsSelectedID, lbApplyID) {
+                    var arr = JSON.parse($(hfColumnsSelectedID).val());
 
                     $.map(arr, function (elementOfArray, indexInArray) {
-                        if (elementOfArray.ColumnName == $(cb).attr('data-field')) {
+                        if (elementOfArray.Column == $(cb).attr('data-field')) {
                             elementOfArray.Visible = $(cb).is(':checked');
                         }
                     });
 
-                    $('#hf" + this.ID + @"ColumnsSelected').val(JSON.stringify(arr));
-                    document.cookie = '" + this.ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
-                    $('#" + lbApply.ClientID + @"').show();
+                    $(hfColumnsSelectedID).val(JSON.stringify(arr));
+                    document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
+                    $(lbApplyID).show();
                 }
 
-                function ColumnIndexChanged(link, index) {
-                    var arr = JSON.parse($('#hf" + this.ID + @"ColumnsSelected').val());
+                function " + ClientID + @"ColumnIndexChanged(link, index, hfColumnsSelectedID, lbApplyID) {
+                    var arr = JSON.parse($(hfColumnsSelectedID).val());
                     var li = $(link).parent();
                     var liPrev = li.prev();
                     var liNext = li.next();
@@ -1084,22 +664,750 @@ namespace GridViewEx
                     }
                     liChildren.closest('input:checkbox').attr('data-index', index);
 
-                    $('#hf" + this.ID + @"ColumnsSelected').val(JSON.stringify(arr));
-                    document.cookie = '" + this.ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
-                    $('#" + lbApply.ClientID + @"').show();
-                }";
+                    $(hfColumnsSelectedID).val(JSON.stringify(arr));
+                    document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
+                    $(lbApplyID).show();
+                }
+                " + JSScript + @"
 
-            JSScriptEndRequestHandler += this.ClientID + @"ColumnPopover();";
-            JSScriptDocumentReady += this.ClientID + @"ColumnPopover();";
+                function " + ClientID + @"BeginRequestHandler(sender, args) {
+                    $('#" + ClientID + @"grid-view .overlay')
+                        .width($('#" + ClientID + @"grid-view').width())
+                        .height($('#" + ClientID + @"grid-view').height())
+                        .show();
+                    " + JSScriptBeginRequestHandler + @"
+                }
+
+                function " + ClientID + @"EndRequestHandler(sender, args) {
+                    $('#" + ClientID + @"grid-view .overlay').hide();
+
+                    if (" + ClientID + @"SizeCompact)
+                        " + ClientID + @"CompactTable(true);
+
+                    if (" + ClientID + @"IsFilterShown)
+                        " + ClientID + @"ToggleInlineFilter(true);
+
+                    " + ClientID + @"DeleteAlert();
+
+                    " + ClientID + @"CreateTopScrollbar()
+                    " + JSScriptEndRequestHandler + @"
+                }
+
+                $(document).ready(function () {
+                    if (" + ClientID + @"SizeCompact)
+                        " + ClientID + @"CompactTable(true);
+
+                    if (" + ClientID + @"IsFilterShown)
+                        " + ClientID + @"ToggleInlineFilter(true);
+
+                    " + ClientID + @"DeleteAlert();
+
+                    " + ClientID + @"CreateTopScrollbar();
+                    " + JSScriptDocumentReady + @"
+                });
+            </script>");
+        }
+        #endregion
+
+        /// <summary>
+        /// Create all the different table management like the sorting management, paging, export...
+        /// </summary>
+        public void InitControls()
+        {
+            // Add export control
+            Controls.Add(CreateExportControl());
+
+            // Add sorting management control
+            Controls.Add(CreateSortingManagementControl());
+
+            // Add filter management control
+            Controls.Add(CreateFilterManagementControl());
+
+            // Add column management control
+            Controls.Add(CreateColumnManagementControl());
+
+            // Add view management control
+            Controls.Add(CreateViewManagementControl());
+
+            // Add pager control
+            Controls.Add(CreatePagerControl());
+        }
+
+        /// <summary>
+        /// Set the <paramref name="view"/> as the current
+        /// </summary>
+        /// <param name="view">ViewExpression with the sortings/filters to apply</param>
+        public void SetView(ViewExpression view)
+        {
+            if (view != null)
+            {
+                // TODO: Check than the column on the ColumnExpressions/FilterExpressions/SortExpressions exist or not to remove it from it before add it to the session
+                Context.Session[ID + "_Columns"] = view.ColumnExpressions;
+                Context.Session[ID + "_Filters"] = view.FilterExpressions;
+                Context.Session[ID + "_SortExpressions"] = view.SortExpressions;
+
+                if (view.PageSize != 0)
+                    Context.Session[ID + "_PageSize"] = view.PageSize;
+            }
+        }
+
+        /// <summary>
+        /// Load the <paramref name="views"/> into the list of available views
+        /// </summary>
+        /// <param name="views">List of ViewExpression with the sortings/filters to apply</param>
+        public void LoadViews(List<ViewExpression> views)
+        {
+            Context.Session[ID + "_ViewExpressions"] = views;
+        }
+
+        /// <summary>
+        /// Get the GridView DataSource with the current filters/sortings/columns applied to it. Also returns the specified page
+        /// </summary>
+        /// <param name="query">IQueryable with the query to send to DB</param>
+        /// <param name="customOrder">Set to true if you want to custom order the list, so no SQL order is applied</param>
+        /// <param name="isExport">Set to true so all results are returned</param>
+        /// <returns>List with the selected data</returns>
+        public List<dynamic> GridViewExDataSource<T>(IQueryable<T> query, bool customOrder = false, bool isExport = false)
+        {
+            // Reset the session when reload the grid unless ks is defined
+            if (!Page.IsPostBack)
+            {
+                bool keepSession = false;
+                bool.TryParse(Context.Request["ks"], out keepSession);
+                bool defaultView = Convert.ToBoolean(Context.Session[ID + "_DefaultView"]);
+
+                if (!keepSession
+                    && !defaultView)
+                {
+                    Context.Session[ID + "_PageIndex"] = PageIndex;
+                    Context.Session[ID + "_PageSize"] = PageSize;
+                    Context.Session[ID + "_SortExpressions"] = SortExpressions != null ? SortExpressions : new List<SortExpression>();
+                    Context.Session[ID + "_Filters"] = null;
+                    Context.Session[ID + "_Columns"] = null;
+                }
+            }
+
+            if (!isExport)
+            {
+                var sortExpressions = Context.Session[ID + "_SortExpressions"] as List<SortExpression>;
+
+                // Column management
+                if (Context.Session[ID + "_Columns"] == null)
+                {
+                    var columns = new List<ColumnExpression>();
+                    var index = 0;
+                    foreach (var column in Columns)
+                    {
+                        var gridViewExColumn = column as ColumnEx;
+                        var boundColumn = column as BoundField;
+                        var checkboxColumn = column as CheckBoxField;
+
+                        if (gridViewExColumn != null)
+                        {
+                            columns.Add(new ColumnExpression
+                            {
+                                Column = gridViewExColumn.DataField,
+                                DisplayName = gridViewExColumn.HeaderText,
+                                Visible = gridViewExColumn.Visible,
+                                Type = "ColumnEx",
+                                Index = index,
+                                DataFormat = gridViewExColumn.DataFormat,
+                                DataFormatExpression = gridViewExColumn.DataFormatExpression
+                            });
+
+                            // Add the display name into the sort expressions
+                            if (sortExpressions != null)
+                            {
+                                var sortExpr = sortExpressions.SingleOrDefault(x => x.Column == gridViewExColumn.DataField);
+                                if (sortExpr != null)
+                                    sortExpr.DisplayName = gridViewExColumn.HeaderText;
+                            }
+                        }
+                        else if (boundColumn != null)
+                        {
+                            columns.Add(new ColumnExpression
+                            {
+                                Column = boundColumn.DataField,
+                                DisplayName = boundColumn.HeaderText,
+                                Visible = boundColumn.Visible,
+                                Type = "BoundField",
+                                Index = index,
+                                DataFormat = DataFormatEnum.Text,
+                                DataFormatExpression = String.Empty
+                            });
+
+                            // Add the display name into the sort expressions
+                            if (sortExpressions != null)
+                            {
+                                var sortExpr = sortExpressions.SingleOrDefault(x => x.Column == boundColumn.DataField);
+                                if (sortExpr != null)
+                                    sortExpr.DisplayName = boundColumn.HeaderText;
+                            }
+                        }
+                        else if (checkboxColumn != null)
+                        {
+                            columns.Add(new ColumnExpression
+                            {
+                                Column = checkboxColumn.DataField,
+                                DisplayName = checkboxColumn.HeaderText,
+                                Visible = checkboxColumn.Visible,
+                                Type = "CheckBoxField",
+                                Index = index,
+                                DataFormat = DataFormatEnum.Text,
+                                DataFormatExpression = String.Empty
+                            });
+
+                            // Add the display name into the sort expressions
+                            if (sortExpressions != null)
+                            {
+                                var sortExpr = sortExpressions.SingleOrDefault(x => x.Column == checkboxColumn.DataField);
+                                if (sortExpr != null)
+                                    sortExpr.DisplayName = checkboxColumn.HeaderText;
+                            }
+                        }
+
+                        index++;
+                    }
+
+                    Context.Session[ID + "_Columns"] = columns;
+                }
+                else
+                {
+                    foreach (var sessionColumn in (List<ColumnExpression>)Context.Session[ID + "_Columns"])
+                    {
+                        var index = 0;
+                        foreach (var column in Columns)
+                        {
+                            var flag = false;
+                            switch (sessionColumn.Type)
+                            {
+                                case "ColumnEx":
+                                    var gridViewExColumn = column as ColumnEx;
+                                    if (gridViewExColumn != null
+                                        && gridViewExColumn.DataField == sessionColumn.Column)
+                                    {
+                                        gridViewExColumn.Visible = sessionColumn.Visible;
+
+                                        if (sessionColumn.Index != index)
+                                        {
+                                            var col = Columns[index];
+                                            Columns.Remove(col);
+                                            Columns.Insert(sessionColumn.Index, col);
+                                            flag = true;
+                                        }
+
+                                        // Add the display name into the sort expressions
+                                        if (sortExpressions != null)
+                                        {
+                                            var sortExpr = sortExpressions.SingleOrDefault(x => x.Column == gridViewExColumn.DataField);
+                                            if (sortExpr != null)
+                                                sortExpr.DisplayName = gridViewExColumn.HeaderText;
+                                        }
+                                    }
+                                    break;
+                                case "BoundField":
+                                    var boundColumn = column as BoundColumn;
+                                    if (boundColumn != null
+                                        && boundColumn.DataField == sessionColumn.Column)
+                                    {
+                                        boundColumn.Visible = sessionColumn.Visible;
+
+                                        if (sessionColumn.Index != index)
+                                        {
+                                            var col = Columns[index];
+                                            Columns.Remove(col);
+                                            Columns.Insert(sessionColumn.Index, col);
+                                            flag = true;
+                                        }
+
+                                        // Add the display name into the sort expressions
+                                        if (sortExpressions != null)
+                                        {
+                                            var sortExpr = sortExpressions.SingleOrDefault(x => x.Column == boundColumn.DataField);
+                                            if (sortExpr != null)
+                                                sortExpr.DisplayName = boundColumn.HeaderText;
+                                        }
+                                    }
+                                    break;
+                            }
+
+                            index++;
+                            if (flag)
+                                break;
+                        }
+                    }
+                }
+
+                Context.Session[ID + "_SortExpressions"] = sortExpressions;
+
+                int pageSize = Context.Session[ID + "_PageSize"] != null
+                    ? Convert.ToInt32(Context.Session[ID + "_PageSize"])
+                    : PageSize;
+                int pageIndex = Context.Session[ID + "_PageIndex"] != null
+                    ? Convert.ToInt32(Context.Session[ID + "_PageIndex"])
+                    : PageIndex;
+
+                Context.Session[ID + "_PageIndex"] = pageIndex;
+                Context.Session[ID + "_PageSize"] = pageSize;
+
+                int startRow = pageIndex * pageSize;
+
+                // Save filters data for later access
+                foreach (var column in Columns)
+                {
+                    var gridViewExColumn = column as ColumnEx;
+                    if (gridViewExColumn != null
+                        && gridViewExColumn.SearchType == SearchTypeEnum.DropDownList
+                        && gridViewExColumn.DropDownDataSource == null)
+                    {
+                        gridViewExColumn.DropDownDataSource = query.GetDropDownDataSource(gridViewExColumn.DataField, gridViewExColumn.DataFormat, gridViewExColumn.DataFormatExpression);
+                    }
+                }
+
+                query = query.Filter((List<FilterExpression>)Context.Session[ID + "_Filters"]); // Apply filters
+
+                // Count total records
+                Context.Session[ID + "_Records"] = query.Count();
+
+                if (!customOrder)
+                {
+                    // Sort the rows
+                    var sourceIQueryable = (IQueryable<dynamic>)query.Order((List<SortExpression>)Context.Session[ID + "_SortExpressions"]);
+
+                    // Page the query if necessary
+                    sourceIQueryable = sourceIQueryable.Skip(startRow).Take(pageSize);
+
+                    // Finally return list
+                    return sourceIQueryable.ToList();
+                }
+                else
+                {
+                    // Page the query if necessary
+                    query = query.Skip(startRow).Take(pageSize);
+
+                    // Finally return list
+                    return ((IQueryable<dynamic>)query).ToList();
+                }
+            }
+            else
+            {
+                query = query.Filter((List<FilterExpression>)Context.Session[ID + "_Filters"]); // Apply filters
+                return (!customOrder)
+                    ? ((IQueryable<dynamic>)query.Order((List<SortExpression>)Context.Session[ID + "_SortExpressions"])).ToList()
+                    : ((IQueryable<dynamic>)query).ToList();
+            }
+        }
+
+        /// <summary>
+        /// Change the sorting index
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
+        /// <param name="indexUp">Set true if the index is moved up, oterwhise set to false</param>
+        private void SortingChangeIndex(object sender, EventArgs e, bool indexUp)
+        {
+            var btn = sender as LinkButton;
+            if (btn != null)
+            {
+                var sortingSelection = (List<SortExpression>)Context.Session[ID + "_SortExpressions"];
+                if (sortingSelection != null)
+                {
+                    var sortExpression = sortingSelection.SingleOrDefault(x => x.Column == btn.CommandArgument);
+                    if (sortExpression != null)
+                    {
+                        int oldIndex = sortingSelection.IndexOf(sortExpression);
+                        sortingSelection.Remove(sortExpression);
+
+                        sortingSelection.Insert(indexUp ? (oldIndex - 1) : (oldIndex + 1), sortExpression);
+
+                        Context.Session[ID + "_SortExpressions"] = sortingSelection;
+                    }
+
+                    //ucGridViewEx_DataBind();
+                    if (SortingChanged != null)
+                        SortingChanged(null, EventArgs.Empty);
+
+                    InitControls();
+                }
+            }
+        }
+
+        #region CONTROL CREATION
+        /// <summary>
+        /// Create the export to excel control
+        /// </summary>
+        private Control CreateExportControl()
+        {
+            var phControl = new PlaceHolder();
+
+            var lbExport = new LinkButton
+            {
+                ID = "lbExport",
+                CssClass = "btn pull-right",
+                ToolTip = "Export to Excel",
+                Text = "<i class=\"icon-download\"></i>"
+            };
+            lbExport.Click += lbExport_Click;
+            lbExport.Attributes.Add("style", "margin-right: 10px;");
+            lbExport.Attributes.Add("onclick", "$(this).addClass('disabled').delay(3000).queue(function(next) { $(this).removeClass('disabled'); next(); });");
+
+            // Disable the export function if no records to export
+            if (Rows.Count == 0)
+            {
+                lbExport.CssClass += " disabled";
+                lbExport.Enabled = false;
+            }
+
+            phControl.Controls.Add(lbExport);
+
+            // In case user use UpdatePanel register a normal postback if not it fails
+            ScriptManager.GetCurrent(Page).RegisterPostBackControl(lbExport);
+            return phControl;
+        }
+
+        /// <summary>
+        /// Create the filter management control
+        /// </summary>
+        private Control CreateFilterManagementControl()
+        {
+            var filters = (List<FilterExpression>)Context.Session[ID + "_Filters"] != null
+                ? (List<FilterExpression>)Context.Session[ID + "_Filters"]
+                : new List<FilterExpression>();
+
+            var phControl = new PlaceHolder();
+
+            var hlFilterSelection = new HtmlAnchor
+            {
+                ID = "hl" + ID + "FilterSelection",
+                ClientIDMode = ClientIDMode.Static,
+                HRef = "#",
+                Title = "Filter Management",
+                InnerHtml = "<i class=\"icon-filter\"></i>"
+            };
+            hlFilterSelection.Attributes.Add("class", "btn pull-right");
+            hlFilterSelection.Attributes.Add("style", "margin-right: 10px;");
+            if (filters.Count >= 1)
+                hlFilterSelection.Attributes["style"] += "background-color: #B2C6E0;background-image: linear-gradient(to bottom, #FFFFFF, #B2C6E0);";
+
+            phControl.Controls.Add(hlFilterSelection);
+
+            var divFilterSelection = new HtmlGenericControl("div");
+            divFilterSelection.ID = "div" + ID + "FilterSelection";
+            divFilterSelection.ClientIDMode = ClientIDMode.Static;
+            divFilterSelection.Attributes.Add("style", "display: none;");
+
+            var lbRemoveAll = new LinkButton
+            {
+                Text = "Remove All",
+                ToolTip = "Remove all sortings",
+                Visible = filters.Count >= 1
+            };
+            lbRemoveAll.Click += lbFilterRemoveAll_Click;
+            divFilterSelection.Controls.Add(lbRemoveAll);
+
+            var ul = new HtmlGenericControl("ul");
+
+            if (filters.Count >= 1)
+            {
+                foreach (var filterExpression in filters)
+                {
+                    var r = new Regex(@"
+                    (?<=[A-Z])(?=[A-Z][a-z]) |
+                    (?<=[^A-Z])(?=[A-Z]) |
+                    (?<=[A-Za-z])(?=[^A-Za-z])", RegexOptions.IgnorePatternWhitespace);
+
+                    var liFilter = new HtmlGenericControl("li");
+
+                    var lbRemove = new LinkButton
+                    {
+                        Text = "<i class=\"icon-remove\"></i>",
+                        ToolTip = "Remove",
+                        CommandArgument = filterExpression.Column + "|" + filterExpression.ExpressionShortName + "|" + filterExpression.Text
+                    };
+                    lbRemove.Click += lbFilterRemove_Click;
+                    liFilter.Controls.Add(lbRemove);
+
+                    liFilter.Controls.Add(new Literal
+                    {
+                        Text = String.Format("{0} {1} '{2}'",
+                            filterExpression.DisplayName,
+                            r.Replace(filterExpression.Expression, " ").ToLower(),
+                            filterExpression.Text)
+                    });
+
+                    ul.Controls.Add(liFilter);
+                }
+
+                divFilterSelection.Controls.Add(ul);
+            }
+            else
+                divFilterSelection.Controls.Add(new Label { Text = "No filters" });
+
+            phControl.Controls.Add(divFilterSelection);
+
+            JSScriptEndRequestHandler += ClientID + @"Popover('#" + hlFilterSelection.ClientID + "','#" + divFilterSelection.ClientID + "');";
+            JSScriptDocumentReady += ClientID + @"Popover('#" + hlFilterSelection.ClientID + "','#" + divFilterSelection.ClientID + "');";
 
             return phControl;
         }
 
+        /// <summary>
+        /// Create the sorting management control
+        /// </summary>
+        private Control CreateSortingManagementControl()
+        {
+            var sortings = (List<SortExpression>)Context.Session[ID + "_SortExpressions"] != null
+                ? (List<SortExpression>)Context.Session[ID + "_SortExpressions"]
+                : new List<SortExpression>();
+
+            var phControl = new PlaceHolder();
+
+            var hlSortSelection = new HtmlAnchor
+            {
+                ID = "hl" + ID + "SortSelection",
+                ClientIDMode = ClientIDMode.Static,
+                HRef = "#",
+                Title = "Sorting Management",
+                InnerHtml = "<i class=\"icon-list-alt\"></i>",
+            };
+            hlSortSelection.Attributes.Add("class", "btn pull-right");
+            hlSortSelection.Attributes.Add("style", "margin-right: 10px;");
+            if (sortings.Count >= 1)
+                hlSortSelection.Attributes["style"] += "background-color: #B2C6E0;background-image: linear-gradient(to bottom, #FFFFFF, #B2C6E0);";
+
+            phControl.Controls.Add(hlSortSelection);
+
+            var divSortSelection = new HtmlGenericControl("div");
+            divSortSelection.ID = "div" + ID + "SortSelection";
+            divSortSelection.ClientIDMode = ClientIDMode.Static;
+            divSortSelection.Attributes.Add("style", "display: none;");
+
+            var lbRemoveAll = new LinkButton
+            {
+                Text = "Remove All",
+                ToolTip = "Remove all sortings",
+                Visible = sortings.Count >= 1
+            };
+            lbRemoveAll.Click += lbSortingRemoveAll_Click;
+            divSortSelection.Controls.Add(lbRemoveAll);
+
+            var ol = new HtmlGenericControl("ol");
+
+            if (sortings.Count >= 1)
+            {
+                foreach (var sortExpression in sortings)
+                {
+                    var liSort = new HtmlGenericControl("li");
+
+                    var lbRemove = new LinkButton
+                    {
+                        Text = "<i class=\"icon-remove\"></i>",
+                        ToolTip = "Remove",
+                        CommandArgument = sortExpression.Column
+                    };
+                    lbRemove.Click += lbSortingRemove_Click;
+                    liSort.Controls.Add(lbRemove);
+
+                    var lbChangeIndexUp = new LinkButton
+                    {
+                        Text = "<i class=\"icon-arrow-up\"></i>",
+                        ToolTip = "Up",
+                        CommandArgument = sortExpression.Column,
+                        Visible = sortings.Count > 1
+                            && sortings.IndexOf(sortExpression) != 0
+                    };
+                    lbChangeIndexUp.Click += lbSortingChangeIndexUp_Click;
+                    liSort.Controls.Add(lbChangeIndexUp);
+
+                    var lbChangeIndexDown = new LinkButton
+                    {
+                        Text = "<i class=\"icon-arrow-down\"></i>",
+                        ToolTip = "Down",
+                        CommandArgument = sortExpression.Column,
+                        Visible = sortings.Count > 1
+                            && sortings.IndexOf(sortExpression) != sortings.Count - 1
+                    };
+                    lbChangeIndexDown.Click += lbSortingChangeIndexDown_Click;
+                    liSort.Controls.Add(lbChangeIndexDown);
+
+                    liSort.Controls.Add(new Literal { Text = String.Format("{0} - {1}", !String.IsNullOrWhiteSpace(sortExpression.DisplayName) ? sortExpression.DisplayName : sortExpression.Column, sortExpression.Direction) });
+
+                    ol.Controls.Add(liSort);
+                }
+
+                divSortSelection.Controls.Add(ol);
+            }
+            else
+                divSortSelection.Controls.Add(new Label { Text = "No sortings" });
+
+            phControl.Controls.Add(divSortSelection);
+
+            JSScriptEndRequestHandler += ClientID + @"Popover('#" + hlSortSelection.ClientID + "','#" + divSortSelection.ClientID + "');";
+            JSScriptDocumentReady += ClientID + @"Popover('#" + hlSortSelection.ClientID + "','#" + divSortSelection.ClientID + "');";
+
+            return phControl;
+        }
+
+        /// <summary>
+        /// Create the column management control
+        /// </summary>
+        private Control CreateColumnManagementControl()
+        {
+            var columns = (List<ColumnExpression>)Context.Session[ID + "_Columns"] != null
+                ? (List<ColumnExpression>)Context.Session[ID + "_Columns"]
+                : new List<ColumnExpression>();
+
+            var phControl = new PlaceHolder();
+
+            var hlColumnSelection = new HtmlAnchor
+            {
+                ID = "hl" + ID + "ColumnSelection",
+                ClientIDMode = ClientIDMode.Static,
+                HRef = "#",
+                Title = "Column Management",
+                InnerHtml = "<i class=\"icon-calendar\"></i>"
+            };
+            hlColumnSelection.Attributes.Add("class", "btn pull-right");
+            hlColumnSelection.Attributes.Add("style", "margin-right: 10px;");
+            phControl.Controls.Add(hlColumnSelection);
+
+            var js = new JavaScriptSerializer();
+
+            var hfColumnsSelected = new HiddenField
+            {
+                ID = "hf" + ID + "ColumnsSelected",
+                ClientIDMode = ClientIDMode.Static,
+                Value = js.Serialize(columns)
+            };
+            phControl.Controls.Add(hfColumnsSelected);
+
+            var divColumnSelection = new HtmlGenericControl("div");
+            divColumnSelection.ID = "div" + ID + "ColumnSelection";
+            divColumnSelection.ClientIDMode = ClientIDMode.Static;
+            divColumnSelection.Attributes.Add("style", "display: none;");
+
+            var hlHideAll = new HtmlAnchor
+            {
+                ID = "hl" + ID + "HideAll",
+                ClientIDMode = ClientIDMode.Static,
+                HRef = "#",
+                InnerText = "Hide All",
+                Title = "Hide all columns",
+                Visible = columns.Count >= 1
+            };
+
+            var hlShowAll = new HtmlAnchor
+            {
+                ID = "hl" + ID + "ShowAll",
+                ClientIDMode = ClientIDMode.Static,
+                HRef = "#",
+                InnerText = "Show All",
+                Title = "Show all columns",
+                Visible = columns.Count >= 1
+            };
+            var lbApply = new LinkButton
+            {
+                ID = "lb" + ID + "Apply",
+                ClientIDMode = ClientIDMode.Static,
+                Text = "Apply",
+                ToolTip = "Apply changes",
+                Visible = columns.Count >= 1
+            };
+            lbApply.Attributes.Add("style", "display: none;float: right;");
+            lbApply.Click += lbColumnApply_Click;
+
+            hlHideAll.Attributes.Add("onclick", ClientID + "ColumnSelectionShowAll(this, false, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');$('#" + hlHideAll.ClientID + @", #" + hlShowAll.ClientID + @"').toggle();");
+            hlShowAll.Attributes.Add("onclick", ClientID + "ColumnSelectionShowAll(this, true, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');$('#" + hlHideAll.ClientID + @", #" + hlShowAll.ClientID + @"').toggle();");
+
+            var isAllVisible = true;
+            foreach (var column in columns)
+                if (!column.Visible)
+                {
+                    isAllVisible = false;
+                    break;
+                }
+
+            if (isAllVisible)
+                hlShowAll.Attributes.Add("style", "display: none;");
+            else
+                hlHideAll.Attributes.Add("style", "display: none;");
+
+            divColumnSelection.Controls.Add(hlHideAll);
+            divColumnSelection.Controls.Add(hlShowAll);
+            divColumnSelection.Controls.Add(lbApply);
+
+            if (columns.Count >= 1)
+            {
+                var ol = new HtmlGenericControl("ol");
+
+                foreach (var column in columns)
+                {
+                    var liColumn = new HtmlGenericControl("li");
+
+                    var cbVisible = new HtmlInputCheckBox
+                    {
+                        Checked = column.Visible
+                    };
+                    cbVisible.Attributes.Add("title", "Check to make it visible");
+                    cbVisible.Attributes.Add("onclick", ClientID + "ColumnSelectionChanged(this, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
+                    cbVisible.Attributes.Add("data-field", column.Column);
+                    cbVisible.Attributes.Add("data-index", column.Index.ToString());
+                    liColumn.Controls.Add(cbVisible);
+
+                    var lbChangeIndexUp = new HtmlAnchor
+                    {
+                        InnerHtml = "<i class=\"icon-arrow-up\"></i>",
+                        Title = "Up"
+                    };
+
+                    if (columns.Count <= 1
+                        || columns.IndexOf(column) == 0)
+                        lbChangeIndexUp.Attributes.Add("style", "visibility: hidden;");
+
+                    lbChangeIndexUp.Attributes.Add("data-action", "up");
+                    lbChangeIndexUp.Attributes.Add("onclick", ClientID + "ColumnIndexChanged(this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) - 1, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
+                    liColumn.Controls.Add(lbChangeIndexUp);
+
+                    var lbChangeIndexDown = new HtmlAnchor
+                    {
+                        InnerHtml = "<i class=\"icon-arrow-down\"></i>",
+                        Title = "Down"
+                    };
+                    if (columns.Count <= 1
+                        || columns.IndexOf(column) == columns.Count - 1)
+                        lbChangeIndexDown.Attributes.Add("style", "visibility: hidden;");
+
+                    lbChangeIndexDown.Attributes.Add("data-action", "down");
+                    lbChangeIndexDown.Attributes.Add("onclick", ClientID + "ColumnIndexChanged(this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) + 1, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
+                    liColumn.Controls.Add(lbChangeIndexDown);
+
+                    liColumn.Controls.Add(new Literal { Text = column.DisplayName });
+
+                    ol.Controls.Add(liColumn);
+                }
+
+                divColumnSelection.Controls.Add(ol);
+            }
+            else
+                divColumnSelection.Controls.Add(new Label { Text = "No columns" });
+
+            phControl.Controls.Add(divColumnSelection);
+
+            JSScriptEndRequestHandler += ClientID + @"Popover('#" + hlColumnSelection.ClientID + "', '#" + divColumnSelection.ClientID + "');";
+            JSScriptDocumentReady += ClientID + @"Popover('#" + hlColumnSelection.ClientID + "', '#" + divColumnSelection.ClientID + "');";
+
+            return phControl;
+        }
+
+        /// <summary>
+        /// Create the view management control
+        /// </summary>
         private Control CreateViewManagementControl()
         {
-            var views = (List<ViewExpression>)Context.Session[this.ID + "_ViewExpressions"] != null
-                ? (List<ViewExpression>)Context.Session[this.ID + "_ViewExpressions"]
+            var views = (List<ViewExpression>)Context.Session[ID + "_ViewExpressions"] != null
+                ? (List<ViewExpression>)Context.Session[ID + "_ViewExpressions"]
                 : new List<ViewExpression>();
+            views = views.OrderBy(x => x.Name).ToList();
 
             var phControl = new PlaceHolder();
 
@@ -1113,7 +1421,7 @@ namespace GridViewEx
 
                 var ddlViews = new DropDownList
                 {
-                    ID = "ddl" + this.ID + "ViewExpressionList",
+                    ID = "ddl" + ID + "ViewExpressionList",
                     ClientIDMode = ClientIDMode.Static,
                     AutoPostBack = true,
                     CssClass = "span1"
@@ -1123,7 +1431,7 @@ namespace GridViewEx
                 ddlViews.Items.Add(new ListItem("", "-1"));
                 ddlViews.Items.AddRange(views.Select(x => new ListItem
                 {
-                    Text = x.Name,
+                    Text = x.Name + (x.DefaultView ? " *" : ""),
                     Value = x.ID.ToString()
                 }).ToArray());
 
@@ -1131,9 +1439,9 @@ namespace GridViewEx
 
                 var hlViewExpression = new HtmlAnchor
                 {
-                    ID = "hl" + this.ID + "ViewExpression",
+                    ID = "hl" + ID + "ViewExpression",
                     ClientIDMode = ClientIDMode.Static,
-                    HRef = "#div" + this.ID + "ViewExpression",
+                    HRef = "#div" + ID + "ViewExpression",
                     Title = "View Management",
                     InnerHtml = "<i class=\"icon-eye-open\"></i>",
                 };
@@ -1144,32 +1452,14 @@ namespace GridViewEx
 
                 divAppend.Controls.Add(hlViewExpression);
                 phControl.Controls.Add(divAppend);
-
-//                JSScript += @"
-//                    function " + this.ClientID + @"ViewsManagement() {
-//                        $('#" + divAppend.ClientID + @"').hover(function() {
-//                            $('#" + hlViewExpression.ClientID + @"').delay(500).queue(function(next){
-//                                $(this).addClass('add-on');
-//                                $('#" + ddlViews.ClientID + @"').show();
-//                                next();
-//                            });
-//                        }, function() { 
-//                            $('#" + hlViewExpression.ClientID + @"').removeClass('add-on');
-//                            $('#" + ddlViews.ClientID + @"').hide();
-//                        });
-//                    }
-//                ";
-
-//                JSScriptEndRequestHandler += this.ClientID + @"ViewsManagement();";
-//                JSScriptDocumentReady += this.ClientID + @"ViewsManagement();";
             }
             else
             {
                 var hlViewExpression = new HtmlAnchor
                 {
-                    ID = "hl" + this.ID + "ViewExpression",
+                    ID = "hl" + ID + "ViewExpression",
                     ClientIDMode = ClientIDMode.Static,
-                    HRef = "#div" + this.ID + "ViewExpression",
+                    HRef = "#div" + ID + "ViewExpression",
                     Title = "View Management",
                     InnerHtml = "<i class=\"icon-eye-open\"></i>",
                 };
@@ -1182,12 +1472,12 @@ namespace GridViewEx
             }
 
             var divViewExpression = new HtmlGenericControl("div");
-            divViewExpression.ID = "div" + this.ID + "ViewExpression";
+            divViewExpression.ID = "div" + ID + "ViewExpression";
             divViewExpression.ClientIDMode = ClientIDMode.Static;
             divViewExpression.Attributes.Add("class", "modal hide fade");
             divViewExpression.Attributes.Add("tabindex", "-1");
             divViewExpression.Attributes.Add("role", "dialog");
-            divViewExpression.Attributes.Add("aria-labelledby", "h3" + this.ID + "ViewExpressionLabel");
+            divViewExpression.Attributes.Add("aria-labelledby", "h3" + ID + "ViewExpressionLabel");
             divViewExpression.Attributes.Add("aria-hidden", "true");
 
             /* START MODAL HEADER */
@@ -1202,7 +1492,7 @@ namespace GridViewEx
             divModalHeader.Controls.Add(btnCloseModal);
 
             var h3ModalLabel = new HtmlGenericControl("h3");
-            h3ModalLabel.ID = "h3" + this.ID + "ViewExpressionLabel";
+            h3ModalLabel.ID = "h3" + ID + "ViewExpressionLabel";
             h3ModalLabel.ClientIDMode = ClientIDMode.Static;
             h3ModalLabel.InnerText = "View Management";
             divModalHeader.Controls.Add(h3ModalLabel);
@@ -1217,61 +1507,107 @@ namespace GridViewEx
             var divModalBodyRow = new HtmlGenericControl("div");
             divModalBodyRow.Attributes.Add("class", "row-fluid");
 
-            var divModalBodyRowSpan1 = new HtmlGenericControl("div");
-            divModalBodyRowSpan1.Attributes.Add("class", "span6");
+            var divModalBodyRowSpan = new HtmlGenericControl("div");
+            divModalBodyRowSpan.Attributes.Add("class", "span12");
 
             var txtViewName = new TextBox
             {
-                ID = "txt" + this.ID + "ViewExpressionTitle",
+                ID = "txt" + ID + "ViewExpressionTitle",
                 ClientIDMode = ClientIDMode.Static
             };
             txtViewName.Attributes.Add("placeholder", "View name...");
-            divModalBodyRowSpan1.Controls.Add(txtViewName);
-            
+            divModalBodyRowSpan.Controls.Add(txtViewName);
+
+            divModalBodyRow.Controls.Add(divModalBodyRowSpan);
+            divModalBody.Controls.Add(divModalBodyRow);
+
+            var divModalBodyRow2 = new HtmlGenericControl("div");
+            divModalBodyRow2.Attributes.Add("class", "row-fluid");
+
+            var divModalBodyRowSpan1 = new HtmlGenericControl("div");
+            divModalBodyRowSpan1.Attributes.Add("class", "span6");
+
+            var divModalBodyRowSpan1Cb = new HtmlGenericControl("div");
+            divModalBodyRowSpan1Cb.ID = "div" + ID + "ViewExpressionCheckBoxes";
+            divModalBodyRowSpan1Cb.ClientIDMode = ClientIDMode.Static;
+
             var cbSaveFilterLabel = new HtmlGenericControl("label");
             cbSaveFilterLabel.Attributes.Add("class", "checkbox");
-            cbSaveFilterLabel.Controls.Add(new CheckBox {
+            cbSaveFilterLabel.Controls.Add(new CheckBox
+            {
                 Checked = true,
-                ID = "cb" + this.ID + "ViewExpressionFilters",
+                ID = "cb" + ID + "ViewExpressionFilters",
                 ClientIDMode = ClientIDMode.Static
             });
             cbSaveFilterLabel.Controls.Add(new Literal { Text = " Save Filters" });
-            divModalBodyRowSpan1.Controls.Add(cbSaveFilterLabel);
+            divModalBodyRowSpan1Cb.Controls.Add(cbSaveFilterLabel);
 
             var cbSaveSortingLabel = new HtmlGenericControl("label");
             cbSaveSortingLabel.Attributes.Add("class", "checkbox");
-            cbSaveSortingLabel.Controls.Add(new CheckBox {
+            cbSaveSortingLabel.Controls.Add(new CheckBox
+            {
                 Checked = true,
-                ID = "cb" + this.ID + "ViewExpressionSortings"
+                ID = "cb" + ID + "ViewExpressionSortings"
             });
             cbSaveSortingLabel.Controls.Add(new Literal { Text = " Save Sortings" });
-            divModalBodyRowSpan1.Controls.Add(cbSaveSortingLabel);
+            divModalBodyRowSpan1Cb.Controls.Add(cbSaveSortingLabel);
 
             var cbSaveColumnLabel = new HtmlGenericControl("label");
             cbSaveColumnLabel.Attributes.Add("class", "checkbox");
-            cbSaveColumnLabel.Controls.Add(new CheckBox {
+            cbSaveColumnLabel.Controls.Add(new CheckBox
+            {
                 Checked = true,
-                ID = "cb" + this.ID + "ViewExpressionColumns"
+                ID = "cb" + ID + "ViewExpressionColumns"
             });
             cbSaveColumnLabel.Controls.Add(new Literal { Text = " Save Columns" });
-            divModalBodyRowSpan1.Controls.Add(cbSaveColumnLabel);
+            divModalBodyRowSpan1Cb.Controls.Add(cbSaveColumnLabel);
 
             var cbSavePageSizeLabel = new HtmlGenericControl("label");
             cbSavePageSizeLabel.Attributes.Add("class", "checkbox");
-            cbSavePageSizeLabel.Controls.Add(new CheckBox {
+            cbSavePageSizeLabel.Controls.Add(new CheckBox
+            {
                 Checked = false,
-                ID = "cb" + this.ID + "ViewExpressionPageSize"
+                ID = "cb" + ID + "ViewExpressionPageSize"
             });
             cbSavePageSizeLabel.Controls.Add(new Literal { Text = " Save Page Size" });
-            divModalBodyRowSpan1.Controls.Add(cbSavePageSizeLabel);
+            divModalBodyRowSpan1Cb.Controls.Add(cbSavePageSizeLabel);
 
-            divModalBodyRow.Controls.Add(divModalBodyRowSpan1);
+            divModalBodyRowSpan1.Controls.Add(divModalBodyRowSpan1Cb);
+
+            var cbDefaultViewLabel = new HtmlGenericControl("label");
+            cbDefaultViewLabel.Attributes.Add("class", "checkbox");
+            cbDefaultViewLabel.Controls.Add(new CheckBox
+            {
+                Checked = false,
+                ID = "cb" + ID + "ViewExpressionDefaultView"
+            });
+            cbDefaultViewLabel.Controls.Add(new Literal { Text = " Make Default View" });
+            divModalBodyRowSpan1.Controls.Add(cbDefaultViewLabel);
+
+            /* START ALERT */
+            var divViewExpressionAlert = new HtmlGenericControl("div");
+            divViewExpressionAlert.ID = "div" + ID + "ViewExpressionAlert";
+            divViewExpressionAlert.ClientIDMode = ClientIDMode.Static;
+            divViewExpressionAlert.Attributes.Add("class", "alert alert-error fade in hide");
+            divViewExpressionAlert.Attributes.Add("style", "font-size: 14px;line-height: 20px;");
+
+            var btnViewExpressionAlert = new HtmlButton { InnerText = "x" };
+            btnViewExpressionAlert.Attributes.Add("class", "close");
+            btnViewExpressionAlert.Attributes.Add("data-dismiss", "alert");
+            divViewExpressionAlert.Controls.Add(btnViewExpressionAlert);
+
+            var divViewExpressionAlertText = new HtmlGenericControl("div");
+            divViewExpressionAlert.Controls.Add(divViewExpressionAlertText);
+            divModalBodyRowSpan1.Controls.Add(divViewExpressionAlert);
+            /* END ALERT */
+
+            divModalBodyRow2.Controls.Add(divModalBodyRowSpan1);
 
             var divModalBodyRowSpan2 = new HtmlGenericControl("div");
             divModalBodyRowSpan2.Attributes.Add("class", "span6");
 
             var divSavedFilters = new HtmlGenericControl("div");
-            divSavedFilters.Attributes.Add("style", "overflow-y:auto; width:100%; min-height:100px; padding:5px; max-height:200px; border:1px solid whiteSmoke; font-size:14px; line-height:20px;");
+            divSavedFilters.Attributes.Add("style", "overflow-y:auto; height:200px; padding:5px; border:1px solid whiteSmoke; font-size:14px; line-height:20px;");
 
             if (views.Count >= 1)
             {
@@ -1290,17 +1626,27 @@ namespace GridViewEx
                 {
                     var li = new HtmlGenericControl("li");
 
-                    var lblVisible = new HtmlGenericControl("label");
-                    lblVisible.Attributes.Add("class", "checkbox");
+                    //var lbMakeDefault = new LinkButton
+                    //{
+                    //    Text = "<i class=\"icon-ok-circle\"></i>",
+                    //    ToolTip = "Default View"
+                    //};
+                    //li.Controls.Add(lbMakeDefault);
 
                     //var cbVisible = new CheckBox();
                     ////cbVisible.Attributes.Add("onclick", "ColumnSelectionChanged(this);");
                     //cbVisible.Attributes.Add("data-index", view.ID.ToString());
 
-                    //lblVisible.Controls.Add(cbVisible);
-                    lblVisible.Controls.Add(new Literal { Text = view.Name });
+                    //li.Controls.Add(cbVisible);
+                    var litViewName = new Literal { Text = " " + view.Name };
+                    if (view.DefaultView)
+                    {
+                        litViewName.Text += " <i class=\"icon-asterisk\"></i>";
+                        li.Attributes.Add("title", "Default View");
+                        li.Attributes.Add("style", "font-weight: bold;");
+                    }
 
-                    li.Controls.Add(lblVisible);
+                    li.Controls.Add(litViewName);
                     ol.Controls.Add(li);
                 }
 
@@ -1309,11 +1655,11 @@ namespace GridViewEx
             else
                 divSavedFilters.Controls.Add(new Label { Text = "No views" });
 
-            
-            divModalBodyRowSpan2.Controls.Add(divSavedFilters);
-            divModalBodyRow.Controls.Add(divModalBodyRowSpan2);
 
-            divModalBody.Controls.Add(divModalBodyRow);
+            divModalBodyRowSpan2.Controls.Add(divSavedFilters);
+            divModalBodyRow2.Controls.Add(divModalBodyRowSpan2);
+
+            divModalBody.Controls.Add(divModalBodyRow2);
             divViewExpression.Controls.Add(divModalBody);
             /* END MODAL BODY */
 
@@ -1330,6 +1676,7 @@ namespace GridViewEx
             var btnSaveViewManagement = new LinkButton { Text = "Save" };
             btnSaveViewManagement.Click += btnSaveViewManagement_Click;
             btnSaveViewManagement.Attributes.Add("class", "btn btn-primary");
+            btnSaveViewManagement.Attributes.Add("onclick", "return " + ClientID + "SaveView('#" + divViewExpression.ClientID + "', '#" + txtViewName.ClientID + "', '#" + divModalBodyRowSpan1Cb.ClientID + "', '#" + divViewExpressionAlert.ClientID + "');");
             divModalFooter.Controls.Add(btnSaveViewManagement);
 
             divViewExpression.Controls.Add(divModalFooter);
@@ -1340,11 +1687,14 @@ namespace GridViewEx
             return phControl;
         }
 
+        /// <summary>
+        /// Create the pager control
+        /// </summary>
         private Control CreatePagerControl()
         {
-            int pageIndex = (int)Context.Session[this.ID + "_PageIndex"];
-            int pageSize = (int)Context.Session[this.ID + "_PageSize"];
-            int records = (int)Context.Session[this.ID + "_Records"];
+            int pageIndex = (int)Context.Session[ID + "_PageIndex"];
+            int pageSize = (int)Context.Session[ID + "_PageSize"];
+            int records = (int)Context.Session[ID + "_Records"];
 
             var divControl = new HtmlGenericControl("div");
             divControl.Attributes.Add("class", "pagination pagination-centered");
@@ -1435,6 +1785,11 @@ namespace GridViewEx
         #endregion
 
         #region ELEMENT EVENTS
+        /// <summary>
+        /// Excel export
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void lbExport_Click(object sender, EventArgs e)
         {
             var btn = sender as LinkButton;
@@ -1447,12 +1802,17 @@ namespace GridViewEx
             }
         }
 
+        /// <summary>
+        /// Filter management remove single filter expression
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void lbFilterRemove_Click(object sender, EventArgs e)
         {
             var btn = sender as LinkButton;
             if (btn != null)
             {
-                var filterSelection = (List<FilterExpression>)Context.Session[this.ID + "_Filters"];
+                var filterSelection = (List<FilterExpression>)Context.Session[ID + "_Filters"];
                 if (filterSelection != null)
                 {
                     var param = btn.CommandArgument.ToString().Split('|');
@@ -1467,8 +1827,8 @@ namespace GridViewEx
                     if (filterExpression != null)
                         filterSelection.Remove(filterExpression);
 
-                    Context.Session[this.ID + "_Filters"] = filterSelection;
-                    Context.Session[this.ID + "_PageIndex"] = 0;
+                    Context.Session[ID + "_Filters"] = filterSelection;
+                    Context.Session[ID + "_PageIndex"] = 0;
 
                     //ucGridViewEx_DataBind();
                     if (FilterDeleted != null)
@@ -1479,13 +1839,18 @@ namespace GridViewEx
             }
         }
 
+        /// <summary>
+        /// Filter management remove all filter expressions
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void lbFilterRemoveAll_Click(object sender, EventArgs e)
         {
             var btn = sender as LinkButton;
             if (btn != null)
             {
-                Context.Session[this.ID + "_Filters"] = new List<FilterExpression>();
-                Context.Session[this.ID + "_PageIndex"] = 0;
+                Context.Session[ID + "_Filters"] = new List<FilterExpression>();
+                Context.Session[ID + "_PageIndex"] = 0;
 
                 //ucGridViewEx_DataBind();
                 if (FilterDeleted != null)
@@ -1495,19 +1860,24 @@ namespace GridViewEx
             }
         }
 
+        /// <summary>
+        /// Sort management remove single sort expression
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void lbSortingRemove_Click(object sender, EventArgs e)
         {
             var btn = sender as LinkButton;
             if (btn != null)
             {
-                var sortingSelection = (List<SortExpression>)Context.Session[this.ID + "_SortExpressions"];
+                var sortingSelection = (List<SortExpression>)Context.Session[ID + "_SortExpressions"];
                 if (sortingSelection != null)
                 {
                     var sortExpression = sortingSelection.SingleOrDefault(x => x.Column == btn.CommandArgument);
                     if (sortExpression != null)
                         sortingSelection.Remove(sortExpression);
 
-                    Context.Session[this.ID + "_SortExpressions"] = sortingSelection;
+                    Context.Session[ID + "_SortExpressions"] = sortingSelection;
 
                     //ucGridViewEx_DataBind();
                     if (SortingChanged != null)
@@ -1518,12 +1888,17 @@ namespace GridViewEx
             }
         }
 
+        /// <summary>
+        /// Sort management remove all sort expressions
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void lbSortingRemoveAll_Click(object sender, EventArgs e)
         {
             var btn = sender as LinkButton;
             if (btn != null)
             {
-                Context.Session[this.ID + "_SortExpressions"] = new List<SortExpression>();
+                Context.Session[ID + "_SortExpressions"] = new List<SortExpression>();
 
                 //ucGridViewEx_DataBind();
                 if (SortingChanged != null)
@@ -1533,72 +1908,43 @@ namespace GridViewEx
             }
         }
 
+        /// <summary>
+        /// Sort management change sort expression index up
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void lbSortingChangeIndexUp_Click(object sender, EventArgs e)
         {
-            var btn = sender as LinkButton;
-            if (btn != null)
-            {
-                var sortingSelection = (List<SortExpression>)Context.Session[this.ID + "_SortExpressions"];
-                if (sortingSelection != null)
-                {
-                    var sortExpression = sortingSelection.SingleOrDefault(x => x.Column == btn.CommandArgument);
-                    if (sortExpression != null)
-                    {
-                        int oldIndex = sortingSelection.IndexOf(sortExpression);
-                        sortingSelection.Remove(sortExpression);
-                        sortingSelection.Insert(oldIndex - 1, sortExpression);
-
-                        Context.Session[this.ID + "_SortExpressions"] = sortingSelection;
-                    }
-
-                    //ucGridViewEx_DataBind();
-                    if (SortingChanged != null)
-                        SortingChanged(null, EventArgs.Empty);
-
-                    InitControls();
-                }
-            }
+            SortingChangeIndex(sender, e, true);
         }
 
+        /// <summary>
+        /// Sort management change sort expression index down
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void lbSortingChangeIndexDown_Click(object sender, EventArgs e)
         {
-            var btn = sender as LinkButton;
-            if (btn != null)
-            {
-                var sortingSelection = (List<SortExpression>)Context.Session[this.ID + "_SortExpressions"];
-                if (sortingSelection != null)
-                {
-                    var sortExpression = sortingSelection.SingleOrDefault(x => x.Column == btn.CommandArgument);
-                    if (sortExpression != null)
-                    {
-                        int oldIndex = sortingSelection.IndexOf(sortExpression);
-                        sortingSelection.Remove(sortExpression);
-                        sortingSelection.Insert(oldIndex + 1, sortExpression);
-
-                        Context.Session[this.ID + "_SortExpressions"] = sortingSelection;
-                    }
-
-                    //ucGridViewEx_DataBind();
-                    if (SortingChanged != null)
-                        SortingChanged(null, EventArgs.Empty);
-
-                    InitControls();
-                }
-            }
+            SortingChangeIndex(sender, e, false);
         }
 
+        /// <summary>
+        /// Column management changed
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void lbColumnApply_Click(object sender, EventArgs e)
         {
             var btn = sender as LinkButton;
             if (btn != null)
             {
-                var cookie = Page.Request.Cookies[this.ID + "_ColumnsSelected"];
+                var cookie = Page.Request.Cookies[ID + "_ColumnsSelected"];
                 if (cookie != null)
                 {
                     var js = new JavaScriptSerializer();
 
                     var columnSelection = js.Deserialize<List<ColumnExpression>>(HttpUtility.UrlDecode(cookie.Value));
-                    Context.Session[this.ID + "_Columns"] = columnSelection.OrderBy(x => x.Index).ToList();
+                    Context.Session[ID + "_Columns"] = columnSelection.OrderBy(x => x.Index).ToList();
 
                     if (ColumnSelectionChanged != null)
                         ColumnSelectionChanged(null, EventArgs.Empty);
@@ -1608,12 +1954,17 @@ namespace GridViewEx
             InitControls();
         }
 
+        /// <summary>
+        /// Page index changed
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void lbPage_Click(object sender, EventArgs e)
         {
             var btn = sender as LinkButton;
             if (btn != null)
             {
-                Context.Session[this.ID + "_PageIndex"] = Convert.ToInt32(btn.CommandArgument) - 1;
+                Context.Session[ID + "_PageIndex"] = Convert.ToInt32(btn.CommandArgument) - 1;
 
                 if (PageChanged != null)
                     PageChanged(null, EventArgs.Empty);
@@ -1622,13 +1973,18 @@ namespace GridViewEx
             InitControls();
         }
 
+        /// <summary>
+        /// Page size changed
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void ddlPageRecords_SelectedIndexChanged(object sender, EventArgs e)
         {
             var ddl = sender as DropDownList;
             if (ddl != null)
             {
-                Context.Session[this.ID + "_PageIndex"] = 0;
-                Context.Session[this.ID + "_PageSize"] = Convert.ToInt32(ddl.SelectedValue);
+                Context.Session[ID + "_PageIndex"] = 0;
+                Context.Session[ID + "_PageSize"] = Convert.ToInt32(ddl.SelectedValue);
 
                 if (PageChanged != null)
                     PageChanged(null, EventArgs.Empty);
@@ -1637,30 +1993,38 @@ namespace GridViewEx
             InitControls();
         }
 
+        /// <summary>
+        /// View management save view
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void btnSaveViewManagement_Click(object sender, EventArgs e)
         {
             var btn = sender as LinkButton;
             if (btn != null
                 && ViewChanged != null)
             {
-                var txtName = btn.NamingContainer.FindControl("txt" + this.ID + "ViewExpressionTitle") as TextBox;
-                var cbFilters = btn.NamingContainer.FindControl("cb" + this.ID + "ViewExpressionFilters") as CheckBox;
-                var cbSortings = btn.NamingContainer.FindControl("cb" + this.ID + "ViewExpressionSortings") as CheckBox;
-                var cbColumns = btn.NamingContainer.FindControl("cb" + this.ID + "ViewExpressionColumns") as CheckBox;
-                var cbPageSize = btn.NamingContainer.FindControl("cb" + this.ID + "ViewExpressionPageSize") as CheckBox;
+                var txtName = btn.NamingContainer.FindControl("txt" + ID + "ViewExpressionTitle") as TextBox;
+                var cbFilters = btn.NamingContainer.FindControl("cb" + ID + "ViewExpressionFilters") as CheckBox;
+                var cbSortings = btn.NamingContainer.FindControl("cb" + ID + "ViewExpressionSortings") as CheckBox;
+                var cbColumns = btn.NamingContainer.FindControl("cb" + ID + "ViewExpressionColumns") as CheckBox;
+                var cbPageSize = btn.NamingContainer.FindControl("cb" + ID + "ViewExpressionPageSize") as CheckBox;
+                var cbDefaultView = btn.NamingContainer.FindControl("cb" + ID + "ViewExpressionDefaultView") as CheckBox;
                 if (txtName != null
                     && cbFilters != null
                     && cbSortings != null
                     && cbColumns != null
-                    && cbPageSize != null)
+                    && cbPageSize != null
+                    && cbDefaultView != null)
                 {
                     var view = new ViewExpression
                     {
-                        ColumnExpressions = cbColumns.Checked ? Context.Session[this.ID + "_Columns"] as List<ColumnExpression> : null,
-                        FilterExpressions = cbFilters.Checked ? Context.Session[this.ID + "_Filters"] as List<FilterExpression> : null,
-                        SortExpressions = cbSortings.Checked ? Context.Session[this.ID + "_SortExpressions"] as List<SortExpression> : null,
+                        ColumnExpressions = cbColumns.Checked ? Context.Session[ID + "_Columns"] as List<ColumnExpression> : null,
+                        FilterExpressions = cbFilters.Checked ? Context.Session[ID + "_Filters"] as List<FilterExpression> : null,
+                        SortExpressions = cbSortings.Checked ? Context.Session[ID + "_SortExpressions"] as List<SortExpression> : null,
                         Name = txtName.Text,
-                        PageSize = cbPageSize.Checked ? Convert.ToInt32(Context.Session[this.ID + "_PageSize"]) : 0
+                        PageSize = cbPageSize.Checked ? Convert.ToInt32(Context.Session[ID + "_PageSize"]) : 0,
+                        DefaultView = cbDefaultView.Checked
                     };
 
                     ViewChanged(view, EventArgs.Empty);
@@ -1670,6 +2034,11 @@ namespace GridViewEx
             InitControls();
         }
 
+        /// <summary>
+        /// View management change view
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void ddlViews_SelectedIndexChanged(object sender, EventArgs e)
         {
             var ddl = sender as DropDownList;

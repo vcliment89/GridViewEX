@@ -8,19 +8,64 @@ using System.Web.UI.WebControls;
 
 namespace GridViewEx
 {
+    /// <summary>
+    /// Extended column used by GridViewEx
+    /// </summary>
+    /// <remarks>
+    /// [{"Author": "Vicent Climent";
+    /// "Created Date": "08/03/2013"}]
+    /// </remarks>
     public class ColumnEx : DataControlField
     {
+        #region VARIABLES
+        /// <summary>
+        /// Stores the header tooltip. If not defined then use the HeaderText
+        /// </summary>
         public string HeaderToolTip { get; set; }
+
+        /// <summary>
+        /// Stores the search type. None by default
+        /// </summary>
         public SearchTypeEnum SearchType { get; set; }
+
+        /// <summary>
+        /// Stores the data format. Text by default
+        /// </summary>
         public DataFormatEnum DataFormat { get; set; }
+
+        /// <summary>
+        /// Stores the data format expression. If DataFormat is Expression then you need to pass an expression here
+        /// </summary>
         public string DataFormatExpression { get; set; }
+
+        /// <summary>
+        /// Stores the text than is displayed when there's no data. Blank by default
+        /// </summary>
         public string NullDisplayText { get; set; }
+
+        /// <summary>
+        /// Stores the color of the text than is displayed when there's no data
+        /// </summary>
         public Color NullDisplayColor { get; set; }
+
+        /// <summary>
+        /// Stores if bold the text than is displayed when there's no data
+        /// </summary>
         public bool NullDisplayBold { get; set; }
+
+        /// <summary>
+        /// Stores the URL of the link. If this is filled it means the column data will have links
+        /// </summary>
         public string NavigateUrl { get; set; }
-        public event EventHandler FilterApplied;
+
+        /// <summary>
+        /// Stores the list of items to fill the dropdown with if SearchType is set to DropDownList
+        /// </summary>
         public List<ListItem> DropDownDataSource { get; set; }
 
+        /// <summary>
+        /// Stores the data field
+        /// </summary>
         public string DataField
         {
             get
@@ -39,28 +84,44 @@ namespace GridViewEx
                 OnFieldChanged();
             }
         }
+        #endregion
 
+        #region EVENTS
+        /// <summary>
+        /// Event fired when the filter is applied
+        /// </summary>
+        public event EventHandler FilterApplied;
+        #endregion
+
+        #region OVERRIDE FUNCTIONS
+        /// <summary>
+        /// Override the CreateField function
+        /// </summary>
         protected override DataControlField CreateField()
         {
             return new BoundField();
         }
 
+        /// <summary>
+        /// Override the InitializeCell function to add the filters and header tooltips
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="cellType"></param>
+        /// <param name="rowState"></param>
+        /// <param name="rowIndex"></param>
         public override void InitializeCell(DataControlFieldCell cell, DataControlCellType cellType, DataControlRowState rowState, int rowIndex)
         {
             base.InitializeCell(cell, cellType, rowState, rowIndex);
 
             if (cellType == DataControlCellType.Header)
             {
-                var lb = new LinkButton
+                cell.Controls.Add(new LinkButton
                 {
                     Text = HeaderText,
                     ToolTip = String.IsNullOrWhiteSpace(HeaderToolTip) ? HeaderText : HeaderToolTip,
                     CommandName = "Sort",
                     CommandArgument = DataField
-                };
-
-                var tt = cell.Controls;
-                cell.Controls.Add(lb);
+                });
 
                 if (SearchType != SearchTypeEnum.None)
                 {
@@ -79,143 +140,12 @@ namespace GridViewEx
             else if (cellType == DataControlCellType.DataCell)
                 cell.DataBinding += new EventHandler(cell_DataBinding);
         }
-
-        protected void cell_DataBinding(object sender, EventArgs e)
-        {
-            var cell = (TableCell)sender;
-            var dataItem = DataBinder.GetDataItem(cell.NamingContainer);
-            var dataValue = DataBinder.GetPropertyValue(dataItem, DataField);
-            string value = dataValue != null ? dataValue.ToString() : "";
-            if (!String.IsNullOrWhiteSpace(value))
-                switch (DataFormat)
-                {
-                    case DataFormatEnum.Percentage:
-                        Decimal pValue;
-                        if (Decimal.TryParse(value, out pValue))
-                        {
-                            var pText = pValue % 1 == 0 ? String.Format("{0:0%}", pValue) : String.Format("{0:0.00%}", pValue);
-
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = pText, NavigateUrl = NavigateUrl, ToolTip = pText });
-                            else
-                                cell.Text = pText;
-                        }
-                        else
-                        {
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
-                            else
-                                cell.Text = value;
-                        }
-                        break;
-                    case DataFormatEnum.Currency:
-                        Decimal cValue;
-                        if (Decimal.TryParse(value, out cValue))
-                        {
-                            var cText = cValue % 1 == 0 ? String.Format("{0:C0}", cValue) : String.Format("{0:C}", cValue);
-
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = cText, NavigateUrl = NavigateUrl, ToolTip = cText });
-                            else
-                                cell.Text = cText;
-                        }
-                        else
-                        {
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
-                            else
-                                cell.Text = value;
-                        }
-                        break;
-                    case DataFormatEnum.Date:
-                        DateTime dValue;
-                        if (DateTime.TryParse(value, out dValue))
-                        {
-                            var dText = dValue.ToShortDateString();
-
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = dText, NavigateUrl = NavigateUrl, ToolTip = dText });
-                            else
-                                cell.Text = dText;
-                        }
-                        else
-                        {
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
-                            else
-                                cell.Text = value;
-                        }
-                        break;
-                    case DataFormatEnum.ShortDate:
-                        DateTime sdValue;
-                        if (DateTime.TryParse(value, out sdValue))
-                        {
-                            var sdText = String.Format("{0:MM/dd}", sdValue);
-
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = sdText, NavigateUrl = NavigateUrl, ToolTip = sdText });
-                            else
-                                cell.Text = sdText;
-                        }
-                        else
-                        {
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
-                            else
-                                cell.Text = value;
-                        }
-                        break;
-                    case DataFormatEnum.Hour:
-                        Decimal hValue;
-                        if (Decimal.TryParse(value, out hValue))
-                        {
-                            var hText = hValue % 1 == 0 ? String.Format("{0:0 H}", hValue) : String.Format("{0:0.00 H}", hValue);
-
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = hText, NavigateUrl = NavigateUrl, ToolTip = hText });
-                            else
-                                cell.Text = hText;
-                        }
-                        else
-                        {
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
-                            else
-                                cell.Text = value;
-                        }
-                        break;
-                    case DataFormatEnum.Expression:
-                        if (!String.IsNullOrWhiteSpace(DataFormatExpression))
-                        {
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = String.Format(DataFormatExpression, value), NavigateUrl = NavigateUrl, ToolTip = String.Format(DataFormatExpression, value) });
-                            else
-                                cell.Text = String.Format(DataFormatExpression, value);
-                        }
-                        else
-                        {
-                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
-                            else
-                                cell.Text = value;
-                        }
-                        break;
-                    default:
-                        if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                            cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
-                        else
-                            cell.Text = value;
-                        break;
-                }
-            else
-            {
-                cell.Text = NullDisplayText;
-                cell.ForeColor = NullDisplayColor;
-                cell.Font.Bold = NullDisplayBold;
-            }
-        }
+        #endregion
 
         #region CONTROL CREATION
+        /// <summary>
+        /// Create the filter textbox control
+        /// </summary>
         private Control CreateFilterTextBoxControl()
         {
             var controlClientID = this.Control.ClientID;
@@ -348,6 +278,9 @@ namespace GridViewEx
             return divFilter;
         }
 
+        /// <summary>
+        /// Create the filter dropdown list control
+        /// </summary>
         private Control CreateFilterDropDownListControl()
         {
             var controlClientID = this.Control.ClientID;
@@ -447,6 +380,154 @@ namespace GridViewEx
         #endregion
 
         #region ELEMENT EVENTS
+        /// <summary>
+        /// Bind the data into the row
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
+        protected void cell_DataBinding(object sender, EventArgs e)
+        {
+            var cell = sender as TableCell;
+            if (cell != null)
+            {
+                var dataItem = DataBinder.GetDataItem(cell.NamingContainer);
+                var dataValue = DataBinder.GetPropertyValue(dataItem, DataField);
+                string value = dataValue != null ? dataValue.ToString() : "";
+                if (!String.IsNullOrWhiteSpace(value))
+                    switch (DataFormat)
+                    {
+                        case DataFormatEnum.Percentage:
+                            Decimal pValue;
+                            if (Decimal.TryParse(value, out pValue))
+                            {
+                                var pText = pValue % 1 == 0 ? String.Format("{0:0%}", pValue) : String.Format("{0:0.00%}", pValue);
+
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = pText, NavigateUrl = NavigateUrl, ToolTip = pText });
+                                else
+                                    cell.Text = pText;
+                            }
+                            else
+                            {
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                else
+                                    cell.Text = value;
+                            }
+                            break;
+                        case DataFormatEnum.Currency:
+                            Decimal cValue;
+                            if (Decimal.TryParse(value, out cValue))
+                            {
+                                var cText = cValue % 1 == 0 ? String.Format("{0:C0}", cValue) : String.Format("{0:C}", cValue);
+
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = cText, NavigateUrl = NavigateUrl, ToolTip = cText });
+                                else
+                                    cell.Text = cText;
+                            }
+                            else
+                            {
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                else
+                                    cell.Text = value;
+                            }
+                            break;
+                        case DataFormatEnum.Date:
+                            DateTime dValue;
+                            if (DateTime.TryParse(value, out dValue))
+                            {
+                                var dText = dValue.ToShortDateString();
+
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = dText, NavigateUrl = NavigateUrl, ToolTip = dText });
+                                else
+                                    cell.Text = dText;
+                            }
+                            else
+                            {
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                else
+                                    cell.Text = value;
+                            }
+                            break;
+                        case DataFormatEnum.ShortDate:
+                            DateTime sdValue;
+                            if (DateTime.TryParse(value, out sdValue))
+                            {
+                                var sdText = String.Format("{0:MM/dd}", sdValue);
+
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = sdText, NavigateUrl = NavigateUrl, ToolTip = sdText });
+                                else
+                                    cell.Text = sdText;
+                            }
+                            else
+                            {
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                else
+                                    cell.Text = value;
+                            }
+                            break;
+                        case DataFormatEnum.Hour:
+                            Decimal hValue;
+                            if (Decimal.TryParse(value, out hValue))
+                            {
+                                var hText = hValue % 1 == 0 ? String.Format("{0:0 H}", hValue) : String.Format("{0:0.00 H}", hValue);
+
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = hText, NavigateUrl = NavigateUrl, ToolTip = hText });
+                                else
+                                    cell.Text = hText;
+                            }
+                            else
+                            {
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                else
+                                    cell.Text = value;
+                            }
+                            break;
+                        case DataFormatEnum.Expression:
+                            if (!String.IsNullOrWhiteSpace(DataFormatExpression))
+                            {
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = String.Format(DataFormatExpression, value), NavigateUrl = NavigateUrl, ToolTip = String.Format(DataFormatExpression, value) });
+                                else
+                                    cell.Text = String.Format(DataFormatExpression, value);
+                            }
+                            else
+                            {
+                                if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                else
+                                    cell.Text = value;
+                            }
+                            break;
+                        default:
+                            if (!String.IsNullOrWhiteSpace(NavigateUrl))
+                                cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                            else
+                                cell.Text = value;
+                            break;
+                    }
+                else
+                {
+                    cell.Text = NullDisplayText;
+                    cell.ForeColor = NullDisplayColor;
+                    cell.Font.Bold = NullDisplayBold;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Filter textbox applied
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void txtBox_TextChanged(object sender, EventArgs e)
         {
             var txt = sender as TextBox;
@@ -458,6 +539,11 @@ namespace GridViewEx
             }
         }
 
+        /// <summary>
+        /// Filter dropdownlist applied
+        /// </summary>
+        /// <param name="sender">Object which has raised the event</param>
+        /// <param name="e">Contains additional information about the event</param>
         protected void ddlDropDownList_SelectedIndexChanged(object sender, EventArgs e)
         {
             var ddl = (DropDownList)sender;
@@ -470,6 +556,10 @@ namespace GridViewEx
         }
         #endregion
 
+        /// <summary>
+        /// Apply the filter
+        /// </summary>
+        /// <param name="fullFilterExpression">string as came from the user with the filter expression in it</param>
         private void ApplyFilter(string fullFilterExpression)
         {
             var filter = new List<string>(fullFilterExpression.Trim().Split(' '));
