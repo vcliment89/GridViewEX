@@ -1,4 +1,4 @@
-## v1.1.2 (April 10, 2013)
+## v1.1.2 (April 17, 2013)
 - Disabled export icon when no records to export.
 - Disabled filter icon when no records and no filters applied.
 - Improved views management adding some checkings.
