@@ -1,0 +1,765 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>GridViewEx</name>
+    </assembly>
+    <members>
+        <member name="T:GridViewEx.Columns.CheckBoxEx">
+            <summary>
+            Extended checkbox column used by GridViewEx
+            </summary>
+            <remarks>
+            [{"Author": "Vicent Climent";
+            "Created Date": "08/03/2013"}]
+            </remarks>
+        </member>
+        <member name="M:GridViewEx.Columns.CheckBoxEx.CreateField">
+            <summary>
+            Override the CreateField function
+            </summary>
+        </member>
+        <member name="M:GridViewEx.Columns.CheckBoxEx.InitializeCell(System.Web.UI.WebControls.DataControlFieldCell,System.Web.UI.WebControls.DataControlCellType,System.Web.UI.WebControls.DataControlRowState,System.Int32)">
+            <summary>
+            Override the InitializeCell function to add the filters and header tooltips
+            </summary>
+            <param name="cell"></param>
+            <param name="cellType"></param>
+            <param name="rowState"></param>
+            <param name="rowIndex"></param>
+        </member>
+        <member name="M:GridViewEx.Columns.CheckBoxEx.CreateFilterCheckBoxControl(System.String)">
+            <summary>
+            Create the filter checkbox control
+            </summary>
+            <param name="dataField">Data field (Column name)</param>
+        </member>
+        <member name="M:GridViewEx.Columns.CheckBoxEx.cell_DataBinding(System.Object,System.EventArgs)">
+            <summary>
+            Bind the data into the row
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.Columns.CheckBoxEx.checkBox_CheckedChanged(System.Object,System.EventArgs)">
+            <summary>
+            Filter textbox applied
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="P:GridViewEx.Columns.CheckBoxEx.HeaderToolTip">
+            <summary>
+            Stores the header tooltip. If not defined then use the HeaderText
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.CheckBoxEx.DataField">
+            <summary>
+            Stores the data field
+            </summary>
+        </member>
+        <member name="E:GridViewEx.Columns.CheckBoxEx.FilterApplied">
+            <summary>
+            Event fired when the filter is applied
+            </summary>
+        </member>
+        <member name="T:GridViewEx.Columns.ColumnEx">
+            <summary>
+            Extended column used by GridViewEx
+            </summary>
+            <remarks>
+            [{"Author": "Vicent Climent";
+            "Created Date": "08/03/2013"}]
+            </remarks>
+        </member>
+        <member name="M:GridViewEx.Columns.ColumnEx.CreateField">
+            <summary>
+            Override the CreateField function
+            </summary>
+        </member>
+        <member name="M:GridViewEx.Columns.ColumnEx.InitializeCell(System.Web.UI.WebControls.DataControlFieldCell,System.Web.UI.WebControls.DataControlCellType,System.Web.UI.WebControls.DataControlRowState,System.Int32)">
+            <summary>
+            Override the InitializeCell function to add the filters and header tooltips
+            </summary>
+            <param name="cell"></param>
+            <param name="cellType"></param>
+            <param name="rowState"></param>
+            <param name="rowIndex"></param>
+        </member>
+        <member name="M:GridViewEx.Columns.ColumnEx.CreateFilterTextBoxControl">
+            <summary>
+            Create the filter textbox control
+            </summary>
+        </member>
+        <member name="M:GridViewEx.Columns.ColumnEx.CreateFilterDropDownListControl">
+            <summary>
+            Create the filter dropdown list control
+            </summary>
+        </member>
+        <member name="M:GridViewEx.Columns.ColumnEx.cell_DataBinding(System.Object,System.EventArgs)">
+            <summary>
+            Bind the data into the row
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.Columns.ColumnEx.txtBox_TextChanged(System.Object,System.EventArgs)">
+            <summary>
+            Filter textbox applied
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.Columns.ColumnEx.ddlDropDownList_SelectedIndexChanged(System.Object,System.EventArgs)">
+            <summary>
+            Filter dropdownlist applied
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.Columns.ColumnEx.ApplyFilter(System.String)">
+            <summary>
+            Apply the filter
+            </summary>
+            <param name="fullFilterExpression">string as came from the user with the filter expression in it</param>
+        </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.HeaderToolTip">
+            <summary>
+            Stores the header tooltip. If not defined then use the HeaderText
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.SearchType">
+            <summary>
+            Stores the search type. None by default
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.DataFormat">
+            <summary>
+            Stores the data format. Text by default
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.DataFormatExpression">
+            <summary>
+            Stores the data format expression. If DataFormat is Expression then you need to pass an expression here
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.NullDisplayText">
+            <summary>
+            Stores the text than is displayed when there's no data. Blank by default
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.NullDisplayColor">
+            <summary>
+            Stores the color of the text than is displayed when there's no data
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.NullDisplayBold">
+            <summary>
+            Stores if bold the text than is displayed when there's no data
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.NavigateUrl">
+            <summary>
+            Stores the URL of the link. If this is filled it means the column data will have links
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.DropDownDataSource">
+            <summary>
+            Stores the list of items to fill the dropdown with if SearchType is set to DropDownList
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.DataField">
+            <summary>
+            Stores the data field
+            </summary>
+        </member>
+        <member name="E:GridViewEx.Columns.ColumnEx.FilterApplied">
+            <summary>
+            Event fired when the filter is applied
+            </summary>
+        </member>
+        <member name="T:GridViewEx.SortExpression">
+            <summary>
+            Class to store the sort expression
+            </summary>
+        </member>
+        <member name="F:GridViewEx.SortExpression.Column">
+            <summary>
+            Stores the column name (DataField)
+            </summary>
+        </member>
+        <member name="F:GridViewEx.SortExpression.DisplayName">
+            <summary>
+            Stores the column display name
+            </summary>
+        </member>
+        <member name="F:GridViewEx.SortExpression.Direction">
+            <summary>
+            Stores the direction of the sorting (ASC or DESC)
+            </summary>
+        </member>
+        <member name="F:GridViewEx.SortExpression.PreviousDirection">
+            <summary>
+            Stores the previous direction of the sorting expression (ASC or DESC)
+            </summary>
+        </member>
+        <member name="T:GridViewEx.FilterExpression">
+            <summary>
+            Class to store the filter expression
+            </summary>
+        </member>
+        <member name="F:GridViewEx.FilterExpression.Column">
+            <summary>
+            Stores the column name (DataField)
+            </summary>
+        </member>
+        <member name="F:GridViewEx.FilterExpression.DisplayName">
+            <summary>
+            Stores the column display name
+            </summary>
+        </member>
+        <member name="F:GridViewEx.FilterExpression.Expression">
+            <summary>
+            Stores the filter expression full name
+            </summary>
+        </member>
+        <member name="F:GridViewEx.FilterExpression.ExpressionShortName">
+            <summary>
+            Stores the filter expression short name
+            </summary>
+        </member>
+        <member name="F:GridViewEx.FilterExpression.Text">
+            <summary>
+            Stores the text of the filter
+            </summary>
+        </member>
+        <member name="T:GridViewEx.ColumnExpression">
+            <summary>
+            Class to store the column expression
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpression.Column">
+            <summary>
+            Stores the column name (DataField)
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpression.DisplayName">
+            <summary>
+            Stores the column display name
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpression.Visible">
+            <summary>
+            Stores if the column is visible or not
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpression.Type">
+            <summary>
+            Stores the column type
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpression.Index">
+            <summary>
+            Stores the column order index
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpression.DataFormat">
+            <summary>
+            Stores the column data format
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpression.DataFormatExpression">
+            <summary>
+            Stores the column data format expression in case DataFormat is set to 'Expression'
+            </summary>
+        </member>
+        <member name="T:GridViewEx.ViewExpression">
+            <summary>
+            Class to store the view expression
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ViewExpression.ID">
+            <summary>
+            Stores the unique ID of the view
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ViewExpression.Name">
+            <summary>
+            Stores the name of the view
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ViewExpression.SortExpressions">
+            <summary>
+            Stores the sort expression
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ViewExpression.FilterExpressions">
+            <summary>
+            Stores the filter expression
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ViewExpression.ColumnExpressions">
+            <summary>
+            Stores the column expression
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ViewExpression.PageSize">
+            <summary>
+            Stores the table page size
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ViewExpression.DefaultView">
+            <summary>
+            Stores if is the default view
+            </summary>
+        </member>
+        <member name="T:GridViewEx.SearchTypeEnum">
+            <summary>
+            Enumerator with the types of search allowed
+            </summary>
+        </member>
+        <member name="F:GridViewEx.SearchTypeEnum.None">
+            <summary>
+            Default. No search
+            </summary>
+        </member>
+        <member name="F:GridViewEx.SearchTypeEnum.TextBox">
+            <summary>
+            Text input
+            </summary>
+        </member>
+        <member name="F:GridViewEx.SearchTypeEnum.DropDownList">
+            <summary>
+            Dropdown list
+            </summary>
+        </member>
+        <member name="T:GridViewEx.DataFormatEnum">
+            <summary>
+            Enumerator with the data formats allowed
+            </summary>
+        </member>
+        <member name="F:GridViewEx.DataFormatEnum.Text">
+            <summary>
+            Default. Plain text
+            </summary>
+        </member>
+        <member name="F:GridViewEx.DataFormatEnum.Number">
+            <summary>
+            Numeric (2.00)
+            </summary>
+        </member>
+        <member name="F:GridViewEx.DataFormatEnum.Percentage">
+            <summary>
+            Percentage number (3.25%)
+            </summary>
+        </member>
+        <member name="F:GridViewEx.DataFormatEnum.Currency">
+            <summary>
+            Currency number ($ 3.25)
+            </summary>
+        </member>
+        <member name="F:GridViewEx.DataFormatEnum.Date">
+            <summary>
+            Date number (29/08/2012)
+            </summary>
+        </member>
+        <member name="F:GridViewEx.DataFormatEnum.ShortDate">
+            <summary>
+            Short date number (29/08)
+            </summary>
+        </member>
+        <member name="F:GridViewEx.DataFormatEnum.Hour">
+            <summary>
+            Hour number (3H)
+            </summary>
+        </member>
+        <member name="F:GridViewEx.DataFormatEnum.Expression">
+            <summary>
+            Custom expression. Need to fill also DataFormatExpression
+            </summary>
+        </member>
+        <member name="T:GridViewEx.Extensions">
+            <summary>
+            Extension methods used by GridViewEx
+            </summary>
+            <remarks>
+            [{"Author": "Vicent Climent";
+            "Created Date": "08/03/2013"}]
+            </remarks>
+        </member>
+        <member name="M:GridViewEx.Extensions.Order``1(System.Linq.IQueryable{``0},System.Collections.Generic.List{GridViewEx.SortExpression})">
+            <summary>
+            Create the multi-sorting query to the <paramref name="query"/> based on the <paramref name="sortExpressions"/>
+            </summary>
+            <param name="query">Query where to apply the sortings</param>
+            <param name="sortExpressions">Sort expressions</param>
+        </member>
+        <member name="M:GridViewEx.Extensions.GetDropDownDataSource``1(System.Linq.IQueryable{``0},System.String,GridViewEx.DataFormatEnum,System.String)">
+            <summary>
+            Used to fill the filter dropdown list from the <paramref name="query"/>
+            </summary>
+            <param name="query">Query where to apply the sortings</param>
+            <param name="dataField">Column than we want the data</param>
+            <param name="dataFormat">Type of data</param>
+            <param name="dataFormatExpression">If we use a custom expression, here is where we pass it</param>
+        </member>
+        <member name="M:GridViewEx.Extensions.Filter``1(System.Linq.IQueryable{``0},System.Collections.Generic.List{GridViewEx.FilterExpression})">
+            <summary>
+            Create the multi-filter query to the <paramref name="query"/> based on the <paramref name="filterExpressions"/>
+            </summary>
+            <param name="query">Query where to apply the sortings</param>
+            <param name="filterExpressions">Filter expressions</param>
+        </member>
+        <member name="M:GridViewEx.Extensions.ToSQLString(System.Web.UI.WebControls.SortDirection)">
+            <summary>
+            Get the sort direction as a short string
+            </summary>
+            <param name="sortDirection">Query where to apply the sortings</param>
+        </member>
+        <member name="M:GridViewEx.Extensions.FillPager(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Create the custom pager list
+            </summary>
+            <param name="totalRecordCount">Number of records</param>
+            <param name="pageIndex">Page index</param>
+            <param name="pageSize">Page size</param>
+        </member>
+        <member name="M:GridViewEx.Extensions.FillPageRecordsSelector(System.Web.UI.WebControls.DropDownList,System.String[],System.Int32)">
+            <summary>
+            Fill the custom pager size dropdownlist
+            </summary>
+            <param name="ddl">Dropdown list to fill</param>
+            <param name="pagerSelectorOptions">PagerSelectorOptions from the table definition</param>
+            <param name="pageSize">Page size</param>
+        </member>
+        <member name="M:GridViewEx.Extensions.GetExpressionType(System.String)">
+            <summary>
+            Get the LINQ expression as string from the short filter expression
+            </summary>
+            <param name="filterExpression">Short filter expression</param>
+        </member>
+        <member name="M:GridViewEx.Extensions.IsValidExpressionType(System.String)">
+            <summary>
+            Check if the short filter expression is valid
+            </summary>
+            <param name="filterExpression">Short filter expression</param>
+        </member>
+        <member name="M:GridViewEx.Extensions.ExportExcel(System.Collections.Generic.List{System.Object},System.Collections.Generic.List{GridViewEx.ColumnExpression},System.String)">
+            <summary>
+            Export to Excel the <paramref name="source"/> data with the selected <paramref name="columns"/>
+            </summary>
+            <param name="source">List with the data</param>
+            <param name="columns">Selected columns to include on the file</param>
+            <param name="title">Optional title of the file. If no title, it use 'Export' instead</param>
+        </member>
+        <member name="M:GridViewEx.Extensions.GetExcel(System.Collections.Generic.List{System.Object},System.Collections.Generic.List{GridViewEx.ColumnExpression},System.String)">
+            <summary>
+            Get an excel file from the <paramref name="source"/> data with the selected <paramref name="columns"/>
+            </summary>
+            <param name="source">List with the data</param>
+            <param name="columns">Selected columns to include on the file</param>
+            <param name="title">Optional title of the file. If no title, it use 'Export' instead</param>
+        </member>
+        <member name="T:GridViewEx.GridViewEx">
+            <summary>
+            Extended standard .NET GridView lot more functional and powerful than the original
+            </summary>
+            <remarks>
+            [{"Author": "Vicent Climent";
+            "Created Date": "08/03/2013"}]
+            </remarks>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.OnInit(System.EventArgs)">
+            <summary>
+            Override the Init function to add some default options
+            </summary>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.OnLoad(System.EventArgs)">
+            <summary>
+            Override the Init function to call the <see cref="M:GridViewEx.GridViewEx.InitControls"/> function
+            </summary>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.OnDataBound(System.EventArgs)">
+            <summary>
+            Override the DataBound function to show the HTML table header as TH instead of TR
+            </summary>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.OnRowCreated(System.Web.UI.WebControls.GridViewRowEventArgs)">
+            <summary>
+            Override the RowCreated function to show an icon next to the Header title when there's a sorting applied for that column
+            </summary>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.OnSorting(System.Web.UI.WebControls.GridViewSortEventArgs)">
+            <summary>
+            Override the Sorting function to allow the multi column sorting feature
+            </summary>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.Render(System.Web.UI.HtmlTextWriter)">
+            <summary>
+            Override the Render function to add all the new functions
+            </summary>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.InitControls">
+            <summary>
+            Create all the different table management like the sorting management, paging, export...
+            </summary>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.SetView(GridViewEx.ViewExpression)">
+            <summary>
+            Set the <paramref name="view"/> as the current
+            </summary>
+            <param name="view">ViewExpression with the sortings/filters to apply</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.LoadViews(System.Collections.Generic.List{GridViewEx.ViewExpression})">
+            <summary>
+            Load the <paramref name="views"/> into the list of available views
+            </summary>
+            <param name="views">List of ViewExpression with the sortings/filters to apply</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.GridViewExDataSource``1(System.Linq.IQueryable{``0},System.Boolean,System.Boolean)">
+            <summary>
+            Get the GridView DataSource with the current filters/sortings/columns applied to it. Also returns the specified page
+            </summary>
+            <param name="query">IQueryable with the query to send to DB</param>
+            <param name="customOrder">Set to true if you want to custom order the list, so no SQL order is applied</param>
+            <param name="isExport">Set to true so all results are returned</param>
+            <returns>List with the selected data</returns>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.SortingChangeIndex(System.Object,System.EventArgs,System.Boolean)">
+            <summary>
+            Change the sorting index
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+            <param name="indexUp">Set true if the index is moved up, oterwhise set to false</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.CreateExportControl">
+            <summary>
+            Create the export to excel control
+            </summary>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.CreateFilterManagementControl">
+            <summary>
+            Create the filter management control
+            </summary>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.CreateSortingManagementControl">
+            <summary>
+            Create the sorting management control
+            </summary>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.CreateColumnManagementControl">
+            <summary>
+            Create the column management control
+            </summary>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.CreateViewManagementControl">
+            <summary>
+            Create the view management control
+            </summary>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.CreatePagerControl">
+            <summary>
+            Create the pager control
+            </summary>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.lbExport_Click(System.Object,System.EventArgs)">
+            <summary>
+            Excel export
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.lbFilterRemove_Click(System.Object,System.EventArgs)">
+            <summary>
+            Filter management remove single filter expression
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.lbFilterRemoveAll_Click(System.Object,System.EventArgs)">
+            <summary>
+            Filter management remove all filter expressions
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.lbSortingRemove_Click(System.Object,System.EventArgs)">
+            <summary>
+            Sort management remove single sort expression
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.lbSortingRemoveAll_Click(System.Object,System.EventArgs)">
+            <summary>
+            Sort management remove all sort expressions
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.lbSortingChangeIndexUp_Click(System.Object,System.EventArgs)">
+            <summary>
+            Sort management change sort expression index up
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.lbSortingChangeIndexDown_Click(System.Object,System.EventArgs)">
+            <summary>
+            Sort management change sort expression index down
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.lbColumnApply_Click(System.Object,System.EventArgs)">
+            <summary>
+            Column management changed
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.lbPage_Click(System.Object,System.EventArgs)">
+            <summary>
+            Page index changed
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.ddlPageRecords_SelectedIndexChanged(System.Object,System.EventArgs)">
+            <summary>
+            Page size changed
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.btnSaveViewManagement_Click(System.Object,System.EventArgs)">
+            <summary>
+            View management save view
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="M:GridViewEx.GridViewEx.ddlViews_SelectedIndexChanged(System.Object,System.EventArgs)">
+            <summary>
+            View management change view
+            </summary>
+            <param name="sender">Object which has raised the event</param>
+            <param name="e">Contains additional information about the event</param>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.JSScript">
+            <summary>
+            Stores the JS script for the whole table and print it only on one place at the end of the HTML table
+            </summary>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.JSScriptBeginRequestHandler">
+            <summary>
+            Stores the JS function calls to add them inside the JS BeginRequestHandler
+            </summary>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.JSScriptEndRequestHandler">
+            <summary>
+            Stores the JS function calls to add them inside the JS EndRequestHandler
+            </summary>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.JSScriptDocumentReady">
+            <summary>
+            Stores the JS function calls to add them inside the JS jQuery DocumentReady
+            </summary>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.Title">
+            <summary>
+            Used to title the table
+            </summary>
+            <remarks> 
+            The title is added inside the 'legend' tag of the 'fieldset'
+            </remarks> 
+        </member>
+        <member name="P:GridViewEx.GridViewEx.LoadingImageUrl">
+            <summary>
+            Relative URL to a loading image on your project. If <see cref="P:GridViewEx.GridViewEx.LoadingImageUrl"/> is blank or NULL none image is used
+            </summary>
+            <example>  
+            LoadingImageUrl="~/Images/ajax-loader.gif"
+            </example> 
+        </member>
+        <member name="P:GridViewEx.GridViewEx.IsCompact">
+            <summary>
+            Used to set the default size of the table
+            </summary>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.IsFilterShown">
+            <summary>
+            Used to set if by default the inline filters will be displayed
+            </summary>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.TableStriped">
+            <summary>
+            Set if the table should be CSS striped
+            </summary>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.TableHover">
+            <summary>
+            Set if the table row should change the background while hovering
+            </summary>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.PagerSelectorOptions">
+            <summary>
+            Set the pager available option of the drop down list. By default is set to "10,50,100"
+            </summary>
+            <example>  
+            PagerSelectorOptions="5,10,20,40,80"
+            </example>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.SortExpressions">
+            <summary>
+            Set the default Sort Expressions of the table
+            </summary>
+            <example>  
+            This sample shows how to call the <see cref="P:GridViewEx.GridViewEx.SortExpressions"/> method.
+            <code> 
+            gridViewEx.SortExpressions = new List&lt;SortExpression&gt;();
+            gridViewEx.SortExpressions.Add(new SortExpression
+            {
+                Column = "Name",
+                Direction = "DESC"
+            });
+            </code> 
+            </example> 
+        </member>
+        <member name="E:GridViewEx.GridViewEx.SortingChanged">
+            <summary>
+            Event fired when the sorting is changed
+            </summary>
+        </member>
+        <member name="E:GridViewEx.GridViewEx.FilterDeleted">
+            <summary>
+            Event fired when all the filters are deleted
+            </summary>
+        </member>
+        <member name="E:GridViewEx.GridViewEx.PageChanged">
+            <summary>
+            Event fired when the page index or page size is changed
+            </summary>
+        </member>
+        <member name="E:GridViewEx.GridViewEx.ColumnSelectionChanged">
+            <summary>
+            Event fired when the column is moved or when the columns are shown/hide
+            </summary>
+        </member>
+        <member name="E:GridViewEx.GridViewEx.ExcelExport">
+            <summary>
+            Event fired when export the table to excel
+            </summary>
+        </member>
+        <member name="E:GridViewEx.GridViewEx.ViewChanged">
+            <summary>
+            Event fired when the view is changed or when saving a new one
+            </summary>
+        </member>
+    </members>
+</doc>

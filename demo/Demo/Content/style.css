@@ -1,0 +1,123 @@
+﻿/*
+        STYLE INDEX
+    -------------------
+    1.- Elements
+    2.- Classes
+
+
+    --- ELEMENTS ---
+    ----------------
+*/
+
+html, body, form {
+    height: 100%; /* The html, body & form elements cannot have any padding or margin. */
+}
+
+/*
+
+    --- CLASSES ---
+    ---------------
+*/
+
+#wrap {
+    min-height: 100%;
+    height: auto !important;
+    height: 100%;
+    margin: 0 auto -60px; /* Negative indent footer by it's height */
+}
+
+#push, #footer {
+    height: 60px;
+}
+
+/* GRIDVIEWS */
+.table thead th {
+    vertical-align: top;
+}
+
+.grid-view .grid-view-table  {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.grid-view .grid-view-table .alert  {
+    margin-bottom: 0;
+}
+
+.grid-view .overlay {
+    background-color: black;
+    moz-opacity: 0.5;
+    khtml-opacity: .5;
+    opacity: .5;
+    filter: alpha(opacity=50);
+    position: absolute;
+    display: none;
+}
+
+.grid-view .overlay img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-left: -50px; /* -1 * image width / 2 */
+    margin-top: -50px;  /* -1 * image height / 2 */
+    display: block;     
+}
+
+.grid-view legend {
+    margin-bottom: 0;
+}
+
+.grid-view .pagination .records-count {
+    float: right;
+    margin-right: 7px;
+}
+
+.grid-view .pagination .records-select {
+    float: left;
+    margin-left: 7px;
+}
+
+.grid-view .pagination .records-select label {
+    display: inline;
+}
+
+.grid-view .pagination .records-select select {
+    margin: 0;
+}
+
+.grid-view .table th {
+    white-space: nowrap;
+}
+
+.grid-view .table td.align-center, #grid-view .table th.align-center {
+    text-align: center;
+}
+
+.align-center {
+    text-align: center;
+}
+
+.popover {
+    width: auto;
+}
+
+.popover-content {
+    font-size: 14px;
+    line-height: 20px;
+    color: #333;
+}
+
+
+/* BUTTON HOLDER */
+.btn-holder{
+	background-color: whiteSmoke;
+	-webkit-border-radius: 4px;
+       -moz-border-radius: 4px;
+            border-radius: 4px;
+	margin: 0 0 40px;
+	padding: 8px 15px;
+}
+
+.btn-holder .pull-left:nth-child(1n+2) {
+    margin-left: 10px;
+}

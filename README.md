@@ -16,10 +16,16 @@ GridViewEX is a .NET extended Gridview lot more functional and powerful than the
  * Management of the above functions (Columns, filters & sorts).
 
 ## Dependencies
- * [jQuery v1.8.3+](https://github.com/jquery/jquery)
- * [jQuery UI v1.9.2+](https://github.com/jquery/jquery)
- * [Bootstrap v2.2.2+](https://github.com/twitter/bootstrap)
- * [EPPlus v3.1.2](http://epplus.codeplex.com/)
+ * [jQuery v1.8.3](https://github.com/jquery/jquery)
+ * [jQuery UI v1.9.2](https://github.com/jquery/jquery)
+ * [Bootstrap v2.2.1](https://github.com/twitter/bootstrap)
+ * [EPPlus v3.1.3.3](http://epplus.codeplex.com/)
+
+## How to run the demo
+ 1. Download the [AdventureWorks Sample DB](http://msftdbprodsamples.codeplex.com/releases/view/93587)
+ 2. Copy the `*.mdf` and `*.ldf` files to `/demo/Demo/App_Data/`
+ 3. Modify and execute the script on `/demo/Demo/App_Data/InstallDB.sql`
+ 4. Check the ConnectionString and run the solution on your browser
 
 ## Bug tracker
 

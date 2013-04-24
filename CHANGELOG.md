@@ -1,3 +1,10 @@
+## v1.2.1 (April 23, 2013)
+- **Added new type of column** to extend the checkbox allowing filters on it.
+- **Added demo project**. Shows how to implement a basic example of the GridViewEx.
+- Modified Readme.md to show how to use the demo.
+- Deleted repeated files added by accident.
+- Bug fixed deleting cookie on IE7.
+
 ## v1.1.2 (April 17, 2013)
 - Disabled export icon when no records to export.
 - Disabled filter icon when no records and no filters applied.
