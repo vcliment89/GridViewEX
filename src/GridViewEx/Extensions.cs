@@ -71,6 +71,10 @@ namespace GridViewEx
     public class ColumnExpression
     {
         /// <summary>
+        /// Stores the assigned ID
+        /// </summary>
+        public int ID;
+        /// <summary>
         /// Stores the column name (DataField)
         /// </summary>
         public string Column;
@@ -98,6 +102,26 @@ namespace GridViewEx
         /// Stores the column data format expression in case DataFormat is set to 'Expression'
         /// </summary>
         public string DataFormatExpression;
+    }
+
+    /// <summary>
+    /// Class to store the column expression
+    /// </summary>
+    [Serializable]
+    public class ColumnExpressionCookie
+    {
+        /// <summary>
+        /// Stores the assigned ID
+        /// </summary>
+        public int ID;
+        /// <summary>
+        /// Stores if the column is visible or not
+        /// </summary>
+        public bool V;
+        /// <summary>
+        /// Stores the column order index
+        /// </summary>
+        public int I;
     }
 
     /// <summary>
@@ -192,6 +216,37 @@ namespace GridViewEx
         /// Custom expression. Need to fill also DataFormatExpression
         /// </summary>
         Expression
+    }
+
+    /// <summary>
+    /// Enumerator with the checkboxes disabled modes
+    /// </summary>
+    public enum CheckboxDisabledModesEnum
+    {
+        /// <summary>
+        /// Default. Any disabled
+        /// </summary>
+        None,
+        /// <summary>
+        /// All textboxes disabled
+        /// </summary>
+        All,
+        /// <summary>
+        /// Only checkboxes with false value
+        /// </summary>
+        Unchecked,
+        /// <summary>
+        /// Only checkboxes with true value
+        /// </summary>
+        Checked,
+        /// <summary>
+        /// Only checkboxes with NULL value
+        /// </summary>
+        Indeterminate,
+        /// <summary>
+        /// Only checkboxes with true or NULL value
+        /// </summary>
+        CheckedOrIndeterminate
     }
 
     /// <summary>
@@ -512,11 +567,14 @@ namespace GridViewEx
         /// <param name="ddl">Dropdown list to fill</param>
         /// <param name="pagerSelectorOptions">PagerSelectorOptions from the table definition</param>
         /// <param name="pageSize">Page size</param>
-        internal static void FillPageRecordsSelector(this DropDownList ddl, string[] pagerSelectorOptions, int pageSize)
+        /// <param name="totalRecords">Total records on the table</param>
+        internal static void FillPageRecordsSelector(this DropDownList ddl, string[] pagerSelectorOptions, int pageSize, int totalRecords)
         {
             ddl.Items.Clear();
             var items = pagerSelectorOptions.ToList();
-            if (!items.Contains(pageSize.ToString()))
+
+            if (!items.Contains(pageSize.ToString())
+                && pageSize != totalRecords)
                 items.Add(pageSize.ToString());
 
             // Sort the list of strings
@@ -532,8 +590,12 @@ namespace GridViewEx
                 ddl.Items.Add(new ListItem
                 {
                     Text = item,
-                    Value = item,
-                    Selected = item == pageSize.ToString()
+                    Value = item == "All"
+                        ? totalRecords.ToString()
+                        : item,
+                    Selected = item == "All"
+                        ? pageSize == totalRecords
+                        : item == pageSize.ToString()
                 });
         }
 

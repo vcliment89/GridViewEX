@@ -84,6 +84,28 @@ namespace GridViewEx.Columns
                 OnFieldChanged();
             }
         }
+
+        /// <summary>
+        /// Stores the data field for the tool tip
+        /// </summary>
+        public string DataFieldToolTip
+        {
+            get
+            {
+                object value = ViewState["DataFieldToolTip"];
+
+                if (value != null)
+                    return value.ToString();
+
+                return string.Empty;
+            }
+
+            set
+            {
+                ViewState["DataFieldToolTip"] = value;
+                OnFieldChanged();
+            }
+        }
         #endregion
 
         #region EVENTS
@@ -267,7 +289,7 @@ namespace GridViewEx.Columns
                     $('#" + txtBox.ClientID + @"').removeAttr('onkeypress');
                     var oldOnChange = $('#" + txtBox.ClientID + @"').attr('onchange');
                     var onChange = '$(\'#" + hiddenField.ClientID + @"\').val($(\'#" + hiddenField.ClientID + @"\').val() + $(\'#" + txtBox.ClientID + @"\').val());';
-                    $('#" + txtBox.ClientID + @"').attr('onchange', onChange + oldOnChange);
+                    $('#" + txtBox.ClientID + @"').attr('onchange', onChange + oldOnChange.substring(oldOnChange.indexOf('setTimeout')));
                 }";
 
             ((GridViewEx)this.Control).JSScriptEndRequestHandler += controlClientIDDataField + @"Function();";
@@ -392,6 +414,11 @@ namespace GridViewEx.Columns
             {
                 var dataItem = DataBinder.GetDataItem(cell.NamingContainer);
                 var dataValue = DataBinder.GetPropertyValue(dataItem, DataField);
+
+                string tooltip = String.Empty;
+                if (!String.IsNullOrEmpty(DataFieldToolTip))
+                    tooltip = DataBinder.GetPropertyValue(dataItem, DataFieldToolTip).ToString();
+
                 string value = dataValue != null ? dataValue.ToString() : "";
                 if (!String.IsNullOrWhiteSpace(value))
                     switch (DataFormat)
@@ -403,16 +430,28 @@ namespace GridViewEx.Columns
                                 var pText = pValue % 1 == 0 ? String.Format("{0:0%}", pValue) : String.Format("{0:0.00%}", pValue);
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = pText, NavigateUrl = NavigateUrl, ToolTip = pText });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = pText, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = pText, NavigateUrl = NavigateUrl, ToolTip = pText });
                                 else
-                                    cell.Text = pText;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = pText, ToolTip = tooltip });
+                                    else
+                                        cell.Text = pText;
                             }
                             else
                             {
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
                                 else
-                                    cell.Text = value;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = value, ToolTip = tooltip });
+                                    else
+                                        cell.Text = value;
                             }
                             break;
                         case DataFormatEnum.Currency:
@@ -422,16 +461,28 @@ namespace GridViewEx.Columns
                                 var cText = cValue % 1 == 0 ? String.Format("{0:C0}", cValue) : String.Format("{0:C}", cValue);
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = cText, NavigateUrl = NavigateUrl, ToolTip = cText });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = cText, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = cText, NavigateUrl = NavigateUrl, ToolTip = cText });
                                 else
-                                    cell.Text = cText;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = cText, ToolTip = tooltip });
+                                    else
+                                        cell.Text = cText;
                             }
                             else
                             {
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
                                 else
-                                    cell.Text = value;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = value, ToolTip = tooltip });
+                                    else
+                                        cell.Text = value;
                             }
                             break;
                         case DataFormatEnum.Date:
@@ -441,16 +492,28 @@ namespace GridViewEx.Columns
                                 var dText = dValue.ToShortDateString();
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = dText, NavigateUrl = NavigateUrl, ToolTip = dText });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = dText, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = dText, NavigateUrl = NavigateUrl, ToolTip = dText });
                                 else
-                                    cell.Text = dText;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = dText, ToolTip = tooltip });
+                                    else
+                                        cell.Text = dText;
                             }
                             else
                             {
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
                                 else
-                                    cell.Text = value;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = value, ToolTip = tooltip });
+                                    else
+                                        cell.Text = value;
                             }
                             break;
                         case DataFormatEnum.ShortDate:
@@ -460,16 +523,28 @@ namespace GridViewEx.Columns
                                 var sdText = String.Format("{0:MM/dd}", sdValue);
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = sdText, NavigateUrl = NavigateUrl, ToolTip = sdText });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = sdText, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = sdText, NavigateUrl = NavigateUrl, ToolTip = sdText });
                                 else
-                                    cell.Text = sdText;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = sdText, ToolTip = tooltip });
+                                    else
+                                        cell.Text = sdText;
                             }
                             else
                             {
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
                                 else
-                                    cell.Text = value;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = value, ToolTip = tooltip });
+                                    else
+                                        cell.Text = value;
                             }
                             break;
                         case DataFormatEnum.Hour:
@@ -479,39 +554,66 @@ namespace GridViewEx.Columns
                                 var hText = hValue % 1 == 0 ? String.Format("{0:0 H}", hValue) : String.Format("{0:0.00 H}", hValue);
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = hText, NavigateUrl = NavigateUrl, ToolTip = hText });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = hText, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = hText, NavigateUrl = NavigateUrl, ToolTip = hText });
                                 else
-                                    cell.Text = hText;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = hText, ToolTip = tooltip });
+                                    else
+                                        cell.Text = hText;
                             }
                             else
                             {
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
                                 else
-                                    cell.Text = value;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = value, ToolTip = tooltip });
+                                    else
+                                        cell.Text = value;
                             }
                             break;
                         case DataFormatEnum.Expression:
                             if (!String.IsNullOrWhiteSpace(DataFormatExpression))
                             {
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = String.Format(DataFormatExpression, value), NavigateUrl = NavigateUrl, ToolTip = String.Format(DataFormatExpression, value) });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = String.Format(DataFormatExpression, value), NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = String.Format(DataFormatExpression, value), NavigateUrl = NavigateUrl, ToolTip = String.Format(DataFormatExpression, value) });
                                 else
-                                    cell.Text = String.Format(DataFormatExpression, value);
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = String.Format(DataFormatExpression, value), ToolTip = tooltip });
+                                    else
+                                        cell.Text = String.Format(DataFormatExpression, value);
                             }
                             else
                             {
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
-                                    cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = tooltip });
+                                    else
+                                        cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
                                 else
-                                    cell.Text = value;
+                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                        cell.Controls.Add(new Label { Text = value, ToolTip = tooltip });
+                                    else
+                                        cell.Text = value;
                             }
                             break;
                         default:
                             if (!String.IsNullOrWhiteSpace(NavigateUrl))
                                 cell.Controls.Add(new HyperLink { Text = value, NavigateUrl = NavigateUrl, ToolTip = value });
                             else
-                                cell.Text = value;
+                                if (!String.IsNullOrWhiteSpace(tooltip))
+                                    cell.Controls.Add(new Label { Text = value, ToolTip = tooltip });
+                                else
+                                    cell.Text = value;
                             break;
                     }
                 else
@@ -554,7 +656,6 @@ namespace GridViewEx.Columns
                     ApplyFilter(hiddenField.Value);
             }
         }
-        #endregion
 
         /// <summary>
         /// Apply the filter
@@ -665,5 +766,6 @@ namespace GridViewEx.Columns
                     FilterApplied(null, EventArgs.Empty);
             }
         }
+        #endregion
     }
 }

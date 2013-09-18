@@ -19,9 +19,24 @@ namespace GridViewEx.Columns
     {
         #region VARIABLES
         /// <summary>
+        /// Stores the row index
+        /// </summary>
+        internal int RowIndex { get; set; }
+
+        /// <summary>
         /// Stores the header tooltip. If not defined then use the HeaderText
         /// </summary>
         public string HeaderToolTip { get; set; }
+
+        /// <summary>
+        /// Stores if the indeterminate state is allowed or not as NULL value
+        /// </summary>
+        public bool AllowIndeterminateState { get; set; }
+
+        /// <summary>
+        /// Stores if the checkbox is editable or not whenever the condition is meet
+        /// </summary>
+        public CheckboxDisabledModesEnum DisableStateMode { get; set; }
 
         /// <summary>
         /// Stores the data field
@@ -41,6 +56,50 @@ namespace GridViewEx.Columns
             set
             {
                 ViewState["DataField"] = value;
+                OnFieldChanged();
+            }
+        }
+
+        /// <summary>
+        /// Stores the data field for the tool tip
+        /// </summary>
+        public string DataFieldToolTip
+        {
+            get
+            {
+                object value = ViewState["DataFieldToolTip"];
+
+                if (value != null)
+                    return value.ToString();
+
+                return string.Empty;
+            }
+
+            set
+            {
+                ViewState["DataFieldToolTip"] = value;
+                OnFieldChanged();
+            }
+        }
+
+        /// <summary>
+        /// Stores the data field for the id
+        /// </summary>
+        public string DataFieldID
+        {
+            get
+            {
+                object value = ViewState["DataFieldID"];
+
+                if (value != null)
+                    return value.ToString();
+
+                return string.Empty;
+            }
+
+            set
+            {
+                ViewState["DataFieldID"] = value;
                 OnFieldChanged();
             }
         }
@@ -71,6 +130,8 @@ namespace GridViewEx.Columns
         /// <param name="rowIndex"></param>
         public override void InitializeCell(DataControlFieldCell cell, DataControlCellType cellType, DataControlRowState rowState, int rowIndex)
         {
+            RowIndex = rowIndex;
+
             base.InitializeCell(cell, cellType, rowState, rowIndex);
 
             if (cellType == DataControlCellType.Header)
@@ -137,14 +198,76 @@ namespace GridViewEx.Columns
             var cell = sender as TableCell;
             if (cell != null)
             {
+                var controlClientIDDataField = this.Control.ClientID + DataField;
+
                 var dataItem = DataBinder.GetDataItem(cell.NamingContainer);
                 var dataValue = DataBinder.GetPropertyValue(dataItem, DataField);
-                bool value = dataValue != null ? Convert.ToBoolean(dataValue) : false;
+                bool? value = dataValue != null ? Convert.ToBoolean(dataValue) : (bool?)null;
 
-                var cb = new HtmlInputCheckBox { Checked = value };
+                var cb = new HtmlInputCheckBox { Checked = value != null ? (bool)value : false };
                 cb.Attributes.Add("class", this.Control.ClientID + DataField);
 
+                // Add a tooltip if any
+                string tooltip = String.Empty;
+                if (!String.IsNullOrEmpty(DataFieldToolTip))
+                    tooltip = DataBinder.GetPropertyValue(dataItem, DataFieldToolTip).ToString();
+
+                if (!String.IsNullOrWhiteSpace(tooltip))
+                    cb.Attributes.Add("title", tooltip);
+
+                // Add an attribute data-id if any
+                string dataID = String.Empty;
+                if (!String.IsNullOrEmpty(DataFieldID))
+                {
+                    var propertyValue = DataBinder.GetPropertyValue(dataItem, DataFieldID);
+                    if (propertyValue != null)
+                        dataID = propertyValue.ToString();
+                }
+
+                if (!String.IsNullOrWhiteSpace(dataID))
+                    cb.Attributes.Add("data-id", dataID);
+
                 cell.Controls.Add(cb);
+
+                // Allow 3rd state checkbox
+                if (AllowIndeterminateState
+                    && value == null)
+                {
+                    ((GridViewEx)this.Control).JSScriptEndRequestHandler += this.Control.ClientID + @"CheckboxIndeterminate('" + cb.ClientID + @"');";
+                    ((GridViewEx)this.Control).JSScriptDocumentReady += this.Control.ClientID + @"CheckboxIndeterminate('" + cb.ClientID + @"');";
+                }
+
+                // Check if the checkbox is editable or not
+                if (DisableStateMode != CheckboxDisabledModesEnum.None)
+                {
+                    // Add this script only on first row (only one per column)
+                    if (RowIndex == 0)
+                    {
+                        switch (DisableStateMode)
+                        {
+                            case CheckboxDisabledModesEnum.All:
+                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'all');";
+                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'all');";
+                                break;
+                            case CheckboxDisabledModesEnum.Unchecked:
+                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'unchecked');";
+                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'unchecked');";
+                                break;
+                            case CheckboxDisabledModesEnum.Indeterminate:
+                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'null');";
+                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'null');";
+                                break;
+                            case CheckboxDisabledModesEnum.Checked:
+                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checked');";
+                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checked');";
+                                break;
+                            case CheckboxDisabledModesEnum.CheckedOrIndeterminate:
+                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checkedOrNull');";
+                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checkedOrNull');";
+                                break;
+                        }
+                    }
+                }
             }
         }
 

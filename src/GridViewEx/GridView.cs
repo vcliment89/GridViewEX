@@ -32,15 +32,29 @@ namespace GridViewEx
         internal string JSScriptBeginRequestHandler { get; set; }
 
         /// <summary>
+        /// Stores the JS function calls to add them inside the JS BeginRequestHandler (Delayed scripts)
+        /// </summary>
+        internal string JSScriptBeginRequestHandlerDelayed { get; set; }
+
+        /// <summary>
         /// Stores the JS function calls to add them inside the JS EndRequestHandler
         /// </summary>
         internal string JSScriptEndRequestHandler { get; set; }
+
+        /// <summary>
+        /// Stores the JS function calls to add them inside the JS EndRequestHandler (Delayed scripts)
+        /// </summary>
+        internal string JSScriptEndRequestHandlerDelayed { get; set; }
 
         /// <summary>
         /// Stores the JS function calls to add them inside the JS jQuery DocumentReady
         /// </summary>
         internal string JSScriptDocumentReady { get; set; }
 
+        /// <summary>
+        /// Stores the JS function calls to add them inside the JS EndRequestHandler (Delayed scripts)
+        /// </summary>
+        internal string JSScriptDocumentReadyDelayed { get; set; }
 
         /// <summary>
         /// Used to title the table
@@ -64,6 +78,11 @@ namespace GridViewEx
         public bool IsCompact { get; set; }
 
         /// <summary>
+        /// Used to set if the compact button will be displayed
+        /// </summary>
+        public bool IsCompactShown { get; set; }
+
+        /// <summary>
         /// Used to set if by default the inline filters will be displayed
         /// </summary>
         public bool IsFilterShown { get; set; }
@@ -79,7 +98,7 @@ namespace GridViewEx
         public bool TableHover { get; set; }
 
         /// <summary>
-        /// Set the pager available option of the drop down list. By default is set to "10,50,100"
+        /// Set the pager available option of the drop down list. By default is set to "10,50,100,All"
         /// </summary>
         /// <example>  
         /// PagerSelectorOptions="5,10,20,40,80"
@@ -160,7 +179,7 @@ namespace GridViewEx
             if (String.IsNullOrWhiteSpace(EmptyDataText))
                 EmptyDataText = "No data to display";
             if (String.IsNullOrWhiteSpace(PagerSelectorOptions))
-                PagerSelectorOptions = "10,50,100";
+                PagerSelectorOptions = "10,50,100,All";
         }
 
         /// <summary>
@@ -254,6 +273,10 @@ namespace GridViewEx
                         }
                     }
                 }
+                //else if (e.Row.RowType == DataControlRowType.DataRow)
+                //{
+                //    e.Row.Attributes.Add("data-id", "vicent");
+                //}
             }
         }
 
@@ -354,8 +377,11 @@ namespace GridViewEx
                 writer.Write("<a href=\"#\" class=\"btn pull-right\" title=\"Filter\" onclick=\"" + ClientID + "ToggleInlineFilter();\"><i class=\"icon-search\"></i></a>");
 
             // Render compact/expand icons
-            hlCompactTable.RenderControl(writer);
-            hlExpandTable.RenderControl(writer);
+            if (IsCompactShown)
+            {
+                hlCompactTable.RenderControl(writer);
+                hlExpandTable.RenderControl(writer);
+            }
 
             if (base.Controls.Count == 7)
             {
@@ -410,8 +436,8 @@ namespace GridViewEx
                 writer.Write("</div><!-- .grid-view-table -->");
             }
 
-            writer.Write(@"</div><!-- .grid-view -->
-            <script type='text/javascript'>
+            writer.Write("</div><!-- .grid-view -->");
+            var jsScript = @"<script type='text/javascript'>
                 var " + ClientID + @"SizeCompact = " + IsCompact.ToString().ToLower() + @";
                 var " + ClientID + @"IsFilterShown = " + IsFilterShown.ToString().ToLower() + @";
 
@@ -438,28 +464,31 @@ namespace GridViewEx
                             .children('div')
                             .children('table')[0]
                             .scrollWidth);
-                }
-                
-                function " + ClientID + @"CompactTable(isCompact) {
-                    " + ClientID + @"SizeCompact = isCompact;
-                    if (isCompact) {
-                        $('#" + ClientID + @"').addClass('table-condensed');
-                        $('#" + hlExpandTable.ClientID + @"').show();
-                        $('#" + hlCompactTable.ClientID + @"').hide();
-                    }
-                    else {
-                        $('#" + ClientID + @"').removeClass('table-condensed');
-                        $('#" + hlExpandTable.ClientID + @"').hide();
-                        $('#" + hlCompactTable.ClientID + @"').show();
-                    }
-                    $('#" + ClientID + @"Scrollbar')
-                        .children('div')
-                        .width($('#" + ClientID + @"GridViewTable')
-                            .children('div')
-                            .children('table')[0]
-                            .scrollWidth);
-                }
+                }";
 
+            if (IsCompactShown)
+                jsScript += @"
+                    function " + ClientID + @"CompactTable(isCompact) {
+                        " + ClientID + @"SizeCompact = isCompact;
+                        if (isCompact) {
+                            $('#" + ClientID + @"').addClass('table-condensed');
+                            $('#" + hlExpandTable.ClientID + @"').show();
+                            $('#" + hlCompactTable.ClientID + @"').hide();
+                        }
+                        else {
+                            $('#" + ClientID + @"').removeClass('table-condensed');
+                            $('#" + hlExpandTable.ClientID + @"').hide();
+                            $('#" + hlCompactTable.ClientID + @"').show();
+                        }
+                        $('#" + ClientID + @"Scrollbar')
+                            .children('div')
+                            .width($('#" + ClientID + @"GridViewTable')
+                                .children('div')
+                                .children('table')[0]
+                                .scrollWidth);
+                    }";
+
+            jsScript += @"
                 function " + ClientID + @"CreateTopScrollbar() {
                     var element = $('#" + ClientID + @"GridViewTable');
                     var scrollbar = $('<div></div>')
@@ -503,14 +532,13 @@ namespace GridViewEx
                         function () {
                             timer = setTimeout(function () { $(this).popover('hide'); }, 300);
                         });
-
-                    $('.popover').live({
-                        mouseover: function () {
-                            clearTimeout(timer);
-                        },
-                        mouseleave: function () {
-                            timer = setTimeout(function () { $(popover_parent).popover('hide'); }, 300);
-                        }
+                    
+                    $('#" + ClientID + @"grid-view fieldset').on('mouseover', '.popover', function () {
+                        clearTimeout(timer);
+                    });
+                    
+                    $('#" + ClientID + @"grid-view fieldset').on('mouseleave', '.popover', function () {
+                        timer = setTimeout(function () { $(popover_parent).popover('hide'); }, 300);
                     });
                 }
 
@@ -518,156 +546,188 @@ namespace GridViewEx
                     $('#' + hfID).val(value);
                     $('#' + focusID).focus();
                 }
-
-                function " + ClientID + @"SaveView(modalID, txtViewNameID, divViewCheckBoxesID, divAlertID) {
-                    var isViewValid = true;
-                    var viewCheckBoxes = $(divViewCheckBoxesID).find('input[type=\'checkbox\']');
-                    
-                    isViewValid = ($(txtViewNameID).val().length > 0);
-
-                    var count = 0;
-                    $.map(viewCheckBoxes, function (elementOfArray, indexInArray) {
-                        if($(elementOfArray).is(':checked'))
-                            count++;
-                    });
-
-                    if (viewCheckBoxes.length >= 1
-                        && count <= 0)
-                        isViewValid = false;
-
-                    if (isViewValid) {
-                        var d = new Date();
-                        var d2 = new Date(d.getTime() + 5 * 60000); // 5 minutes
-                        document.cookie = '" + ID + @"_AlertMessage=' + escape('View Saved!') + '; expires=' + d2.toUTCString() + '; path=';
-
-                        $(modalID).modal('hide');
-                        return true;
-                    }
-                    else {
-                        if ($(txtViewNameID).val().length <= 0) {
-                            if ($(divAlertID).length <= 0)
-                                $(txtViewNameID).parent().parent().next().children('div:first-child').append('<div id=\'' + divAlertID.substring(1, divAlertID.length) + '\' class=\'alert alert-error fade in\' style=\'font-size: 14px;line-height: 20px;\'><button class=\'close\' data-dismiss=\'alert\'>x</button><div>Must provide a name</div></div>');
-                            else {
-                                $(divAlertID).children('div').html('Must provide a name');
-                                $(divAlertID).show();
-                            }
-
-                            $(txtViewNameID).css('border-color','#B94A48')
-                                .css('color','#B94A48')
-                                .focus();
-                        }
-                        else if (viewCheckBoxes.length >= 1
-                            && count <= 0) {
-                            if ($(divAlertID).length <= 0)
-                                $(txtViewNameID).parent().parent().next().children('div:first-child').append('<div id=\'' + divAlertID.substring(1, divAlertID.length) + '\' class=\'alert alert-error fade in\' style=\'font-size: 14px;line-height: 20px;\'><button class=\'close\' data-dismiss=\'alert\'>x</button><div>Must select at least one option</div></div>');
-                            else {
-                                $(divAlertID).children('div').html('Must select at least one option');
-                                $(divAlertID).show();
-                            }
-
-                            $.map(viewCheckBoxes, function (elementOfArray, indexInArray) {
-                                $(elementOfArray).parent().css('color','#B94A48');
-                            });
-                        }
-                        
-                        return false;
-                    }
-                }
-
+                
                 function " + ClientID + @"DeleteAlert() {
                     var d = new Date();
                     document.cookie = '" + ID + @"_AlertMessage=; expires=' + d.toUTCString() + '; path=';
-                }
+                }";
 
-                function " + ClientID + @"ColumnSelectionShowAll(link, isShowAll, hfColumnsSelectedID, lbApplyID) {
-                    var arr = JSON.parse($(hfColumnsSelectedID).val());
+            if (ViewChanged != null)
+                jsScript += @"
+                    function " + ClientID + @"SaveView(modalID, txtViewNameID, divViewCheckBoxesID, divAlertID) {
+                        var isViewValid = true;
+                        var viewCheckBoxes = $(divViewCheckBoxesID).find('input[type=\'checkbox\']');
                     
-                    $(link).parent().children('ol').children().each(function () {
-                        $(this).children('input:checkbox').prop('checked', isShowAll);
-                    });
+                        isViewValid = ($(txtViewNameID).val().length > 0);
 
-                    $.map(arr, function (elementOfArray, indexInArray) {
-                        elementOfArray.Visible = isShowAll;
-                    });
+                        var count = 0;
+                        $.map(viewCheckBoxes, function (elementOfArray, indexInArray) {
+                            if($(elementOfArray).is(':checked'))
+                                count++;
+                        });
 
-                    $(hfColumnsSelectedID).val(JSON.stringify(arr));
-                    document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
-                    $(lbApplyID).show();
-                }
+                        if (viewCheckBoxes.length >= 1
+                            && count <= 0)
+                            isViewValid = false;
 
-                function " + ClientID + @"ColumnSelectionChanged(cb, hfColumnsSelectedID, lbApplyID) {
-                    var arr = JSON.parse($(hfColumnsSelectedID).val());
+                        if (isViewValid) {
+                            var d = new Date();
+                            var d2 = new Date(d.getTime() + 5 * 60000); // 5 minutes
+                            document.cookie = '" + ID + @"_AlertMessage=' + escape('View Saved!') + '; expires=' + d2.toUTCString() + '; path=';
 
-                    $.map(arr, function (elementOfArray, indexInArray) {
-                        if (elementOfArray.Column == $(cb).attr('data-field')) {
-                            elementOfArray.Visible = $(cb).is(':checked');
+                            $(modalID).modal('hide');
+                            return true;
                         }
-                    });
+                        else {
+                            if ($(txtViewNameID).val().length <= 0) {
+                                if ($(divAlertID).length <= 0)
+                                    $(txtViewNameID).parent().parent().next().children('div:first-child').append('<div id=\'' + divAlertID.substring(1, divAlertID.length) + '\' class=\'alert alert-error fade in\' style=\'font-size: 14px;line-height: 20px;\'><button class=\'close\' data-dismiss=\'alert\'>x</button><div>Must provide a name</div></div>');
+                                else {
+                                    $(divAlertID).children('div').html('Must provide a name');
+                                    $(divAlertID).show();
+                                }
 
-                    $(hfColumnsSelectedID).val(JSON.stringify(arr));
-                    document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
-                    $(lbApplyID).show();
-                }
+                                $(txtViewNameID).css('border-color','#B94A48')
+                                    .css('color','#B94A48')
+                                    .focus();
+                            }
+                            else if (viewCheckBoxes.length >= 1
+                                && count <= 0) {
+                                if ($(divAlertID).length <= 0)
+                                    $(txtViewNameID).parent().parent().next().children('div:first-child').append('<div id=\'' + divAlertID.substring(1, divAlertID.length) + '\' class=\'alert alert-error fade in\' style=\'font-size: 14px;line-height: 20px;\'><button class=\'close\' data-dismiss=\'alert\'>x</button><div>Must select at least one option</div></div>');
+                                else {
+                                    $(divAlertID).children('div').html('Must select at least one option');
+                                    $(divAlertID).show();
+                                }
 
-                function " + ClientID + @"ColumnIndexChanged(link, index, hfColumnsSelectedID, lbApplyID) {
-                    var arr = JSON.parse($(hfColumnsSelectedID).val());
-                    var li = $(link).parent();
-                    var liPrev = li.prev();
-                    var liNext = li.next();
-                    var liChildren = li.children();
-                    var oldIndex = parseInt(liChildren.closest('input:checkbox').attr('data-index'));
+                                $.map(viewCheckBoxes, function (elementOfArray, indexInArray) {
+                                    $(elementOfArray).parent().css('color','#B94A48');
+                                });
+                            }
+                        
+                            return false;
+                        }
+                    }";
 
-                    arr.move(oldIndex, index);
-                    $.map(arr, function (elementOfArray, indexInArray) {
-                        elementOfArray.Index = indexInArray;
-                    });
+            if (ColumnSelectionChanged != null)
+                jsScript += @"
+                    function " + ClientID + @"ColumnSelectionShowAll(link, isShowAll, hfColumnsSelectedID, lbApplyID) {
+                        var arr = JSON.parse($(hfColumnsSelectedID).val());
                     
-                    // Move the item on the list & handle the sort actions depending on the position
-                    if (index == 0) { // Second moved up to first place
-                        li.insertBefore(liPrev);
-                        liPrev.children().closest('input:checkbox').attr('data-index', index + 1);
-                        
-                        liChildren.closest('[data-action=""up""]').css('visibility', 'hidden');
-                        liPrev.children().closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
+                        $(link).parent().children('ol').children().each(function () {
+                            $(this).children('input:checkbox').prop('checked', isShowAll);
+                        });
+
+                        $.map(arr, function (elementOfArray, indexInArray) {
+                            elementOfArray.V = isShowAll;
+                        });
+
+                        $(hfColumnsSelectedID).val(JSON.stringify(arr));
+                        document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
+                        $(lbApplyID).show();
                     }
-                    else if (index == 1
-                        && index > oldIndex) { // First moved down to second place
-                        li.insertAfter(liNext);
-                        liNext.children().closest('input:checkbox').attr('data-index', index - 1);
-                        
-                        liNext.children().closest('[data-action=""up""]').css('visibility', 'hidden');
-                        liChildren.closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
+
+                    function " + ClientID + @"ColumnSelectionChanged(cb, hfColumnsSelectedID, lbApplyID) {
+                        var arr = JSON.parse($(hfColumnsSelectedID).val());
+
+                        $.map(arr, function (elementOfArray, indexInArray) {
+                            if (elementOfArray.ID == $(cb).attr('data-field')) {
+                                elementOfArray.V = $(cb).is(':checked');
+                            }
+                        });
+
+                        $(hfColumnsSelectedID).val(JSON.stringify(arr));
+                        document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
+                        $(lbApplyID).show();
                     }
-                    else if (index == li.parent().children().length - 2
-                        && oldIndex > index) { // Last moved up to penultimate place
-                        li.insertBefore(liPrev);
-                        liPrev.children().closest('input:checkbox').attr('data-index', index + 1);
-                        
-                        liPrev.children().closest('[data-action=""down""]').css('visibility', 'hidden');
-                        liChildren.closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
-                    }
-                    else if (index == li.parent().children().length - 1) { // Penultimate moved down to last place
-                        li.insertAfter(liNext);
-                        liNext.children().closest('input:checkbox').attr('data-index', index - 1);
-                        
-                        liChildren.closest('[data-action=""down""]').css('visibility', 'hidden');
-                        liNext.children().closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
-                    }
-                    else {
-                        if (oldIndex < index) { // Moved Down
-                            li.insertAfter(liNext);
-                            liNext.children().closest('input:checkbox').attr('data-index', index - 1);
-                        }
-                        else { // Moved Up
+
+                    function " + ClientID + @"ColumnIndexChanged(link, index, hfColumnsSelectedID, lbApplyID) {
+                        var arr = JSON.parse($(hfColumnsSelectedID).val());
+                        var li = $(link).parent();
+                        var liPrev = li.prev();
+                        var liNext = li.next();
+                        var liChildren = li.children();
+                        var oldIndex = parseInt(liChildren.closest('input:checkbox').attr('data-index'));
+
+                        arr.move(oldIndex, index);
+                        $.map(arr, function (elementOfArray, indexInArray) {
+                            elementOfArray.I = indexInArray;
+                        });
+                    
+                        // Move the item on the list & handle the sort actions depending on the position
+                        if (index == 0) { // Second moved up to first place
                             li.insertBefore(liPrev);
                             liPrev.children().closest('input:checkbox').attr('data-index', index + 1);
+                        
+                            liChildren.closest('[data-action=""up""]').css('visibility', 'hidden');
+                            liPrev.children().closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
                         }
-                    }
-                    liChildren.closest('input:checkbox').attr('data-index', index);
+                        else if (index == 1
+                            && index > oldIndex) { // First moved down to second place
+                            li.insertAfter(liNext);
+                            liNext.children().closest('input:checkbox').attr('data-index', index - 1);
+                        
+                            liNext.children().closest('[data-action=""up""]').css('visibility', 'hidden');
+                            liChildren.closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
+                        }
+                        else if (index == li.parent().children().length - 2
+                            && oldIndex > index) { // Last moved up to penultimate place
+                            li.insertBefore(liPrev);
+                            liPrev.children().closest('input:checkbox').attr('data-index', index + 1);
+                        
+                            liPrev.children().closest('[data-action=""down""]').css('visibility', 'hidden');
+                            liChildren.closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
+                        }
+                        else if (index == li.parent().children().length - 1) { // Penultimate moved down to last place
+                            li.insertAfter(liNext);
+                            liNext.children().closest('input:checkbox').attr('data-index', index - 1);
+                        
+                            liChildren.closest('[data-action=""down""]').css('visibility', 'hidden');
+                            liNext.children().closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
+                        }
+                        else {
+                            if (oldIndex < index) { // Moved Down
+                                li.insertAfter(liNext);
+                                liNext.children().closest('input:checkbox').attr('data-index', index - 1);
+                            }
+                            else { // Moved Up
+                                li.insertBefore(liPrev);
+                                liPrev.children().closest('input:checkbox').attr('data-index', index + 1);
+                            }
+                        }
+                        liChildren.closest('input:checkbox').attr('data-index', index);
 
-                    $(hfColumnsSelectedID).val(JSON.stringify(arr));
-                    document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
-                    $(lbApplyID).show();
+                        $(hfColumnsSelectedID).val(JSON.stringify(arr));
+                        document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
+                        $(lbApplyID).show();
+                    }";
+
+            jsScript += @"
+                function " + ClientID + @"CheckboxIndeterminate(cbID) {
+                    var cb = document.getElementById(cbID);
+                    if (cb != null)
+                        cb.indeterminate = true;
+                }
+                
+                function " + ClientID + @"ColumnCheckboxesDisable(columnName, mode) {
+                    $('.' + columnName).each(function (index) {
+                        if (mode == 'checked'
+                            && $(this).is(':checked'))
+                            $(this).attr('disabled', 'disabled');
+                        else if (mode == 'unchecked'
+                            && $(this).is(':not(:checked)')
+                            && !$(this)[0].indeterminate)
+                            $(this).attr('disabled', 'disabled');
+                        else if (mode == 'null'
+                            && $(this)[0].indeterminate)
+                            $(this).attr('disabled', 'disabled');
+                        else if (mode == 'checkedOrNull'
+                            && ($(this).is(':checked')
+                                || $(this)[0].indeterminate))
+                            $(this).attr('disabled', 'disabled');
+                        else if (mode == 'all')
+                            $(this).attr('disabled', 'disabled');
+                    });
                 }
                 " + JSScript + @"
 
@@ -677,6 +737,7 @@ namespace GridViewEx
                         .height($('#" + ClientID + @"grid-view').height())
                         .show();
                     " + JSScriptBeginRequestHandler + @"
+                    " + JSScriptBeginRequestHandlerDelayed + @"
                 }
 
                 function " + ClientID + @"EndRequestHandler(sender, args) {
@@ -690,8 +751,8 @@ namespace GridViewEx
 
                     " + ClientID + @"DeleteAlert();
 
-                    " + ClientID + @"CreateTopScrollbar()
                     " + JSScriptEndRequestHandler + @"
+                    " + JSScriptEndRequestHandlerDelayed + @"
                 }
 
                 $(document).ready(function () {
@@ -705,8 +766,11 @@ namespace GridViewEx
 
                     " + ClientID + @"CreateTopScrollbar();
                     " + JSScriptDocumentReady + @"
+                    " + JSScriptDocumentReadyDelayed + @"
                 });
-            </script>");
+            </script>";
+
+            ScriptManager.RegisterStartupScript(this, this.GetType(), ClientID + "JSScript", jsScript, false); 
         }
         #endregion
 
@@ -808,6 +872,7 @@ namespace GridViewEx
                         {
                             columns.Add(new ColumnExpression
                             {
+                                ID = index,
                                 Column = gridViewExColumn.DataField,
                                 DisplayName = gridViewExColumn.HeaderText,
                                 Visible = gridViewExColumn.Visible,
@@ -829,6 +894,7 @@ namespace GridViewEx
                         {
                             columns.Add(new ColumnExpression
                             {
+                                ID = index,
                                 Column = gridViewExCheckBox.DataField,
                                 DisplayName = gridViewExCheckBox.HeaderText,
                                 Visible = gridViewExCheckBox.Visible,
@@ -850,6 +916,7 @@ namespace GridViewEx
                         {
                             columns.Add(new ColumnExpression
                             {
+                                ID = index,
                                 Column = boundColumn.DataField,
                                 DisplayName = boundColumn.HeaderText,
                                 Visible = boundColumn.Visible,
@@ -871,6 +938,7 @@ namespace GridViewEx
                         {
                             columns.Add(new ColumnExpression
                             {
+                                ID = index,
                                 Column = checkboxColumn.DataField,
                                 DisplayName = checkboxColumn.HeaderText,
                                 Visible = checkboxColumn.Visible,
@@ -1019,7 +1087,9 @@ namespace GridViewEx
                 if (!customOrder)
                 {
                     // Sort the rows
-                    var sourceIQueryable = (IQueryable<dynamic>)query.Order((List<SortExpression>)Context.Session[ID + "_SortExpressions"]);
+                    var sourceIQueryable = ((List<SortExpression>)Context.Session[ID + "_SortExpressions"]).Count > 0
+                        ? (IQueryable<dynamic>)query.Order((List<SortExpression>)Context.Session[ID + "_SortExpressions"])
+                        : (IQueryable<dynamic>)query.OrderBy(x => x);
 
                     // Page the query if necessary
                     sourceIQueryable = sourceIQueryable.Skip(startRow).Take(pageSize);
@@ -1087,28 +1157,32 @@ namespace GridViewEx
         {
             var phControl = new PlaceHolder();
 
-            var lbExport = new LinkButton
+            if (ExcelExport != null)
             {
-                ID = "lbExport",
-                CssClass = "btn pull-right",
-                ToolTip = "Export to Excel",
-                Text = "<i class=\"icon-download\"></i>"
-            };
-            lbExport.Click += lbExport_Click;
-            lbExport.Attributes.Add("style", "margin-right: 10px;");
-            lbExport.Attributes.Add("onclick", "$(this).addClass('disabled').delay(3000).queue(function(next) { $(this).removeClass('disabled'); next(); });");
+                var lbExport = new LinkButton
+                {
+                    ID = "lbExport",
+                    CssClass = "btn pull-right",
+                    ToolTip = "Export to Excel",
+                    Text = "<i class=\"icon-download\"></i>"
+                };
+                lbExport.Click += lbExport_Click;
+                lbExport.Attributes.Add("style", "margin-right: 10px;");
+                lbExport.Attributes.Add("onclick", "$(this).addClass('disabled').delay(3000).queue(function(next) { $(this).removeClass('disabled'); next(); });");
 
-            // Disable the export function if no records to export
-            if (Rows.Count == 0)
-            {
-                lbExport.CssClass += " disabled";
-                lbExport.Enabled = false;
+                // Disable the export function if no records to export
+                if (Rows.Count == 0)
+                {
+                    lbExport.CssClass += " disabled";
+                    lbExport.Enabled = false;
+                }
+
+                phControl.Controls.Add(lbExport);
+
+                // In case user use UpdatePanel register a normal postback if not it fails
+                ScriptManager.GetCurrent(Page).RegisterPostBackControl(lbExport);
             }
 
-            phControl.Controls.Add(lbExport);
-
-            // In case user use UpdatePanel register a normal postback if not it fails
-            ScriptManager.GetCurrent(Page).RegisterPostBackControl(lbExport);
             return phControl;
         }
 
@@ -1300,148 +1374,156 @@ namespace GridViewEx
         /// </summary>
         private Control CreateColumnManagementControl()
         {
-            var columns = (List<ColumnExpression>)Context.Session[ID + "_Columns"] != null
-                ? (List<ColumnExpression>)Context.Session[ID + "_Columns"]
-                : new List<ColumnExpression>();
-
             var phControl = new PlaceHolder();
 
-            var hlColumnSelection = new HtmlAnchor
+            if (ColumnSelectionChanged != null)
             {
-                ID = "hl" + ID + "ColumnSelection",
-                ClientIDMode = ClientIDMode.Static,
-                HRef = "#",
-                Title = "Column Management",
-                InnerHtml = "<i class=\"icon-calendar\"></i>"
-            };
-            hlColumnSelection.Attributes.Add("class", "btn pull-right");
-            hlColumnSelection.Attributes.Add("style", "margin-right: 10px;");
-            phControl.Controls.Add(hlColumnSelection);
+                var columns = (List<ColumnExpression>)Context.Session[ID + "_Columns"] != null
+                    ? (List<ColumnExpression>)Context.Session[ID + "_Columns"]
+                    : new List<ColumnExpression>();
 
-            var js = new JavaScriptSerializer();
-
-            var hfColumnsSelected = new HiddenField
-            {
-                ID = "hf" + ID + "ColumnsSelected",
-                ClientIDMode = ClientIDMode.Static,
-                Value = js.Serialize(columns)
-            };
-            phControl.Controls.Add(hfColumnsSelected);
-
-            var divColumnSelection = new HtmlGenericControl("div");
-            divColumnSelection.ID = "div" + ID + "ColumnSelection";
-            divColumnSelection.ClientIDMode = ClientIDMode.Static;
-            divColumnSelection.Attributes.Add("style", "display: none;");
-
-            var hlHideAll = new HtmlAnchor
-            {
-                ID = "hl" + ID + "HideAll",
-                ClientIDMode = ClientIDMode.Static,
-                HRef = "#",
-                InnerText = "Hide All",
-                Title = "Hide all columns",
-                Visible = columns.Count >= 1
-            };
-
-            var hlShowAll = new HtmlAnchor
-            {
-                ID = "hl" + ID + "ShowAll",
-                ClientIDMode = ClientIDMode.Static,
-                HRef = "#",
-                InnerText = "Show All",
-                Title = "Show all columns",
-                Visible = columns.Count >= 1
-            };
-            var lbApply = new LinkButton
-            {
-                ID = "lb" + ID + "Apply",
-                ClientIDMode = ClientIDMode.Static,
-                Text = "Apply",
-                ToolTip = "Apply changes",
-                Visible = columns.Count >= 1
-            };
-            lbApply.Attributes.Add("style", "display: none;float: right;");
-            lbApply.Click += lbColumnApply_Click;
-
-            hlHideAll.Attributes.Add("onclick", ClientID + "ColumnSelectionShowAll(this, false, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');$('#" + hlHideAll.ClientID + @", #" + hlShowAll.ClientID + @"').toggle();");
-            hlShowAll.Attributes.Add("onclick", ClientID + "ColumnSelectionShowAll(this, true, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');$('#" + hlHideAll.ClientID + @", #" + hlShowAll.ClientID + @"').toggle();");
-
-            var isAllVisible = true;
-            foreach (var column in columns)
-                if (!column.Visible)
+                var hlColumnSelection = new HtmlAnchor
                 {
-                    isAllVisible = false;
-                    break;
-                }
+                    ID = "hl" + ID + "ColumnSelection",
+                    ClientIDMode = ClientIDMode.Static,
+                    HRef = "#",
+                    Title = "Column Management",
+                    InnerHtml = "<i class=\"icon-calendar\"></i>"
+                };
+                hlColumnSelection.Attributes.Add("class", "btn pull-right");
+                hlColumnSelection.Attributes.Add("style", "margin-right: 10px;");
+                phControl.Controls.Add(hlColumnSelection);
 
-            if (isAllVisible)
-                hlShowAll.Attributes.Add("style", "display: none;");
-            else
-                hlHideAll.Attributes.Add("style", "display: none;");
+                var js = new JavaScriptSerializer();
 
-            divColumnSelection.Controls.Add(hlHideAll);
-            divColumnSelection.Controls.Add(hlShowAll);
-            divColumnSelection.Controls.Add(lbApply);
+                var hfColumnsSelected = new HiddenField
+                {
+                    ID = "hf" + ID + "ColumnsSelected",
+                    ClientIDMode = ClientIDMode.Static,
+                    Value = js.Serialize(columns.Select(x => new
+                    {
+                        ID = x.ID,
+                        V = x.Visible,
+                        I = x.Index
+                    }))
+                };
+                phControl.Controls.Add(hfColumnsSelected);
 
-            if (columns.Count >= 1)
-            {
-                var ol = new HtmlGenericControl("ol");
+                var divColumnSelection = new HtmlGenericControl("div");
+                divColumnSelection.ID = "div" + ID + "ColumnSelection";
+                divColumnSelection.ClientIDMode = ClientIDMode.Static;
+                divColumnSelection.Attributes.Add("style", "display: none;");
 
+                var hlHideAll = new HtmlAnchor
+                {
+                    ID = "hl" + ID + "HideAll",
+                    ClientIDMode = ClientIDMode.Static,
+                    HRef = "#",
+                    InnerText = "Hide All",
+                    Title = "Hide all columns",
+                    Visible = columns.Count >= 1
+                };
+
+                var hlShowAll = new HtmlAnchor
+                {
+                    ID = "hl" + ID + "ShowAll",
+                    ClientIDMode = ClientIDMode.Static,
+                    HRef = "#",
+                    InnerText = "Show All",
+                    Title = "Show all columns",
+                    Visible = columns.Count >= 1
+                };
+                var lbApply = new LinkButton
+                {
+                    ID = "lb" + ID + "Apply",
+                    ClientIDMode = ClientIDMode.Static,
+                    Text = "Apply",
+                    ToolTip = "Apply changes",
+                    Visible = columns.Count >= 1
+                };
+                lbApply.Attributes.Add("style", "display: none;float: right;");
+                lbApply.Click += lbColumnApply_Click;
+
+                hlHideAll.Attributes.Add("onclick", ClientID + "ColumnSelectionShowAll(this, false, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');$('#" + hlHideAll.ClientID + @", #" + hlShowAll.ClientID + @"').toggle();");
+                hlShowAll.Attributes.Add("onclick", ClientID + "ColumnSelectionShowAll(this, true, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');$('#" + hlHideAll.ClientID + @", #" + hlShowAll.ClientID + @"').toggle();");
+
+                var isAllVisible = true;
                 foreach (var column in columns)
+                    if (!column.Visible)
+                    {
+                        isAllVisible = false;
+                        break;
+                    }
+
+                if (isAllVisible)
+                    hlShowAll.Attributes.Add("style", "display: none;");
+                else
+                    hlHideAll.Attributes.Add("style", "display: none;");
+
+                divColumnSelection.Controls.Add(hlHideAll);
+                divColumnSelection.Controls.Add(hlShowAll);
+                divColumnSelection.Controls.Add(lbApply);
+
+                if (columns.Count >= 1)
                 {
-                    var liColumn = new HtmlGenericControl("li");
+                    var ol = new HtmlGenericControl("ol");
 
-                    var cbVisible = new HtmlInputCheckBox
+                    foreach (var column in columns)
                     {
-                        Checked = column.Visible
-                    };
-                    cbVisible.Attributes.Add("title", "Check to make it visible");
-                    cbVisible.Attributes.Add("onclick", ClientID + "ColumnSelectionChanged(this, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
-                    cbVisible.Attributes.Add("data-field", column.Column);
-                    cbVisible.Attributes.Add("data-index", column.Index.ToString());
-                    liColumn.Controls.Add(cbVisible);
+                        var liColumn = new HtmlGenericControl("li");
 
-                    var lbChangeIndexUp = new HtmlAnchor
-                    {
-                        InnerHtml = "<i class=\"icon-arrow-up\"></i>",
-                        Title = "Up"
-                    };
+                        var cbVisible = new HtmlInputCheckBox
+                        {
+                            Checked = column.Visible
+                        };
+                        cbVisible.Attributes.Add("title", "Check to make it visible");
+                        cbVisible.Attributes.Add("onclick", ClientID + "ColumnSelectionChanged(this, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
+                        cbVisible.Attributes.Add("data-field", column.ID.ToString());
+                        cbVisible.Attributes.Add("data-index", column.Index.ToString());
+                        liColumn.Controls.Add(cbVisible);
 
-                    if (columns.Count <= 1
-                        || columns.IndexOf(column) == 0)
-                        lbChangeIndexUp.Attributes.Add("style", "visibility: hidden;");
+                        var lbChangeIndexUp = new HtmlAnchor
+                        {
+                            InnerHtml = "<i class=\"icon-arrow-up\"></i>",
+                            Title = "Up"
+                        };
 
-                    lbChangeIndexUp.Attributes.Add("data-action", "up");
-                    lbChangeIndexUp.Attributes.Add("onclick", ClientID + "ColumnIndexChanged(this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) - 1, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
-                    liColumn.Controls.Add(lbChangeIndexUp);
+                        if (columns.Count <= 1
+                            || columns.IndexOf(column) == 0)
+                            lbChangeIndexUp.Attributes.Add("style", "visibility: hidden;");
 
-                    var lbChangeIndexDown = new HtmlAnchor
-                    {
-                        InnerHtml = "<i class=\"icon-arrow-down\"></i>",
-                        Title = "Down"
-                    };
-                    if (columns.Count <= 1
-                        || columns.IndexOf(column) == columns.Count - 1)
-                        lbChangeIndexDown.Attributes.Add("style", "visibility: hidden;");
+                        lbChangeIndexUp.Attributes.Add("data-action", "up");
+                        lbChangeIndexUp.Attributes.Add("onclick", ClientID + "ColumnIndexChanged(this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) - 1, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
+                        liColumn.Controls.Add(lbChangeIndexUp);
 
-                    lbChangeIndexDown.Attributes.Add("data-action", "down");
-                    lbChangeIndexDown.Attributes.Add("onclick", ClientID + "ColumnIndexChanged(this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) + 1, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
-                    liColumn.Controls.Add(lbChangeIndexDown);
+                        var lbChangeIndexDown = new HtmlAnchor
+                        {
+                            InnerHtml = "<i class=\"icon-arrow-down\"></i>",
+                            Title = "Down"
+                        };
+                        if (columns.Count <= 1
+                            || columns.IndexOf(column) == columns.Count - 1)
+                            lbChangeIndexDown.Attributes.Add("style", "visibility: hidden;");
 
-                    liColumn.Controls.Add(new Literal { Text = column.DisplayName });
+                        lbChangeIndexDown.Attributes.Add("data-action", "down");
+                        lbChangeIndexDown.Attributes.Add("onclick", ClientID + "ColumnIndexChanged(this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) + 1, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
+                        liColumn.Controls.Add(lbChangeIndexDown);
 
-                    ol.Controls.Add(liColumn);
+                        liColumn.Controls.Add(new Literal { Text = column.DisplayName });
+
+                        ol.Controls.Add(liColumn);
+                    }
+
+                    divColumnSelection.Controls.Add(ol);
                 }
+                else
+                    divColumnSelection.Controls.Add(new Label { Text = "No columns" });
 
-                divColumnSelection.Controls.Add(ol);
+                phControl.Controls.Add(divColumnSelection);
+
+                JSScriptEndRequestHandler += ClientID + @"Popover('#" + hlColumnSelection.ClientID + "', '#" + divColumnSelection.ClientID + "');";
+                JSScriptDocumentReady += ClientID + @"Popover('#" + hlColumnSelection.ClientID + "', '#" + divColumnSelection.ClientID + "');";
             }
-            else
-                divColumnSelection.Controls.Add(new Label { Text = "No columns" });
-
-            phControl.Controls.Add(divColumnSelection);
-
-            JSScriptEndRequestHandler += ClientID + @"Popover('#" + hlColumnSelection.ClientID + "', '#" + divColumnSelection.ClientID + "');";
-            JSScriptDocumentReady += ClientID + @"Popover('#" + hlColumnSelection.ClientID + "', '#" + divColumnSelection.ClientID + "');";
 
             return phControl;
         }
@@ -1451,285 +1533,288 @@ namespace GridViewEx
         /// </summary>
         private Control CreateViewManagementControl()
         {
-            var views = (List<ViewExpression>)Context.Session[ID + "_ViewExpressions"] != null
-                ? (List<ViewExpression>)Context.Session[ID + "_ViewExpressions"]
-                : new List<ViewExpression>();
-            views = views.OrderBy(x => x.Name).ToList();
-
             var phControl = new PlaceHolder();
 
-            if (views.Count >= 1)
+            if (ViewChanged != null)
             {
-                var divAppend = new HtmlGenericControl("div");
-                divAppend.ID = "divViewExpressionList";
-                divAppend.ClientIDMode = ClientIDMode.Static;
-                divAppend.Attributes.Add("class", "pull-right input-append");
-                divAppend.Attributes.Add("style", "margin-right: 10px;");
+                var views = (List<ViewExpression>)Context.Session[ID + "_ViewExpressions"] != null
+                    ? (List<ViewExpression>)Context.Session[ID + "_ViewExpressions"]
+                    : new List<ViewExpression>();
+                views = views.OrderBy(x => x.Name).ToList();
 
-                var ddlViews = new DropDownList
+                if (views.Count >= 1)
                 {
-                    ID = "ddl" + ID + "ViewExpressionList",
-                    ClientIDMode = ClientIDMode.Static,
-                    AutoPostBack = true,
-                    CssClass = "span1"
-                };
-                ddlViews.SelectedIndexChanged += ddlViews_SelectedIndexChanged;
+                    var divAppend = new HtmlGenericControl("div");
+                    divAppend.ID = "divViewExpressionList";
+                    divAppend.ClientIDMode = ClientIDMode.Static;
+                    divAppend.Attributes.Add("class", "pull-right input-append");
+                    divAppend.Attributes.Add("style", "margin-right: 10px;");
 
-                ddlViews.Items.Add(new ListItem("", "-1"));
-                ddlViews.Items.AddRange(views.Select(x => new ListItem
-                {
-                    Text = x.Name + (x.DefaultView ? " *" : ""),
-                    Value = x.ID.ToString()
-                }).ToArray());
-
-                divAppend.Controls.Add(ddlViews);
-
-                var hlViewExpression = new HtmlAnchor
-                {
-                    ID = "hl" + ID + "ViewExpression",
-                    ClientIDMode = ClientIDMode.Static,
-                    HRef = "#div" + ID + "ViewExpression",
-                    Title = "View Management",
-                    InnerHtml = "<i class=\"icon-eye-open\"></i>",
-                };
-                hlViewExpression.Attributes.Add("data-toggle", "modal");
-                hlViewExpression.Attributes.Add("role", "button");
-                hlViewExpression.Attributes.Add("style", "display: inline-block;");
-                hlViewExpression.Attributes.Add("class", "btn add-on");
-
-                divAppend.Controls.Add(hlViewExpression);
-                phControl.Controls.Add(divAppend);
-            }
-            else
-            {
-                var hlViewExpression = new HtmlAnchor
-                {
-                    ID = "hl" + ID + "ViewExpression",
-                    ClientIDMode = ClientIDMode.Static,
-                    HRef = "#div" + ID + "ViewExpression",
-                    Title = "View Management",
-                    InnerHtml = "<i class=\"icon-eye-open\"></i>",
-                };
-                hlViewExpression.Attributes.Add("data-toggle", "modal");
-                hlViewExpression.Attributes.Add("role", "button");
-                hlViewExpression.Attributes.Add("style", "display: inline-block;margin-right: 10px;");
-                hlViewExpression.Attributes.Add("class", "btn pull-right");
-
-                phControl.Controls.Add(hlViewExpression);
-            }
-
-            var divViewExpression = new HtmlGenericControl("div");
-            divViewExpression.ID = "div" + ID + "ViewExpression";
-            divViewExpression.ClientIDMode = ClientIDMode.Static;
-            divViewExpression.Attributes.Add("class", "modal hide fade");
-            divViewExpression.Attributes.Add("tabindex", "-1");
-            divViewExpression.Attributes.Add("role", "dialog");
-            divViewExpression.Attributes.Add("aria-labelledby", "h3" + ID + "ViewExpressionLabel");
-            divViewExpression.Attributes.Add("aria-hidden", "true");
-
-            /* START MODAL HEADER */
-            var divModalHeader = new HtmlGenericControl("div");
-            divModalHeader.Attributes.Add("class", "modal-header");
-
-            var btnCloseModal = new HtmlButton { InnerText = "x" };
-            btnCloseModal.Attributes.Add("type", "button");
-            btnCloseModal.Attributes.Add("class", "close");
-            btnCloseModal.Attributes.Add("data-dismiss", "modal");
-            btnCloseModal.Attributes.Add("aria-hidden", "true");
-            divModalHeader.Controls.Add(btnCloseModal);
-
-            var h3ModalLabel = new HtmlGenericControl("h3");
-            h3ModalLabel.ID = "h3" + ID + "ViewExpressionLabel";
-            h3ModalLabel.ClientIDMode = ClientIDMode.Static;
-            h3ModalLabel.InnerText = "View Management";
-            divModalHeader.Controls.Add(h3ModalLabel);
-
-            divViewExpression.Controls.Add(divModalHeader);
-            /* END MODAL HEADER */
-
-            /* START MODAL BODY */
-            var divModalBody = new HtmlGenericControl("div");
-            divModalBody.Attributes.Add("class", "modal-body");
-
-            var divModalBodyRow = new HtmlGenericControl("div");
-            divModalBodyRow.Attributes.Add("class", "row-fluid");
-
-            var divModalBodyRowSpan = new HtmlGenericControl("div");
-            divModalBodyRowSpan.Attributes.Add("class", "span12");
-
-            var txtViewName = new TextBox
-            {
-                ID = "txt" + ID + "ViewExpressionTitle",
-                ClientIDMode = ClientIDMode.Static
-            };
-            txtViewName.Attributes.Add("placeholder", "View name...");
-            divModalBodyRowSpan.Controls.Add(txtViewName);
-
-            divModalBodyRow.Controls.Add(divModalBodyRowSpan);
-            divModalBody.Controls.Add(divModalBodyRow);
-
-            var divModalBodyRow2 = new HtmlGenericControl("div");
-            divModalBodyRow2.Attributes.Add("class", "row-fluid");
-
-            var divModalBodyRowSpan1 = new HtmlGenericControl("div");
-            divModalBodyRowSpan1.Attributes.Add("class", "span6");
-
-            var divModalBodyRowSpan1Cb = new HtmlGenericControl("div");
-            divModalBodyRowSpan1Cb.ID = "div" + ID + "ViewExpressionCheckBoxes";
-            divModalBodyRowSpan1Cb.ClientIDMode = ClientIDMode.Static;
-
-            var cbSaveFilterLabel = new HtmlGenericControl("label");
-            cbSaveFilterLabel.Attributes.Add("class", "checkbox");
-            cbSaveFilterLabel.Controls.Add(new CheckBox
-            {
-                Checked = true,
-                ID = "cb" + ID + "ViewExpressionFilters",
-                ClientIDMode = ClientIDMode.Static
-            });
-            cbSaveFilterLabel.Controls.Add(new Literal { Text = " Save Filters" });
-            divModalBodyRowSpan1Cb.Controls.Add(cbSaveFilterLabel);
-
-            var cbSaveSortingLabel = new HtmlGenericControl("label");
-            cbSaveSortingLabel.Attributes.Add("class", "checkbox");
-            cbSaveSortingLabel.Controls.Add(new CheckBox
-            {
-                Checked = true,
-                ID = "cb" + ID + "ViewExpressionSortings"
-            });
-            cbSaveSortingLabel.Controls.Add(new Literal { Text = " Save Sortings" });
-            divModalBodyRowSpan1Cb.Controls.Add(cbSaveSortingLabel);
-
-            var cbSaveColumnLabel = new HtmlGenericControl("label");
-            cbSaveColumnLabel.Attributes.Add("class", "checkbox");
-            cbSaveColumnLabel.Controls.Add(new CheckBox
-            {
-                Checked = true,
-                ID = "cb" + ID + "ViewExpressionColumns"
-            });
-            cbSaveColumnLabel.Controls.Add(new Literal { Text = " Save Columns" });
-            divModalBodyRowSpan1Cb.Controls.Add(cbSaveColumnLabel);
-
-            var cbSavePageSizeLabel = new HtmlGenericControl("label");
-            cbSavePageSizeLabel.Attributes.Add("class", "checkbox");
-            cbSavePageSizeLabel.Controls.Add(new CheckBox
-            {
-                Checked = false,
-                ID = "cb" + ID + "ViewExpressionPageSize"
-            });
-            cbSavePageSizeLabel.Controls.Add(new Literal { Text = " Save Page Size" });
-            divModalBodyRowSpan1Cb.Controls.Add(cbSavePageSizeLabel);
-
-            divModalBodyRowSpan1.Controls.Add(divModalBodyRowSpan1Cb);
-
-            var cbDefaultViewLabel = new HtmlGenericControl("label");
-            cbDefaultViewLabel.Attributes.Add("class", "checkbox");
-            cbDefaultViewLabel.Controls.Add(new CheckBox
-            {
-                Checked = false,
-                ID = "cb" + ID + "ViewExpressionDefaultView"
-            });
-            cbDefaultViewLabel.Controls.Add(new Literal { Text = " Make Default View" });
-            divModalBodyRowSpan1.Controls.Add(cbDefaultViewLabel);
-
-            /* START ALERT */
-            var divViewExpressionAlert = new HtmlGenericControl("div");
-            divViewExpressionAlert.ID = "div" + ID + "ViewExpressionAlert";
-            divViewExpressionAlert.ClientIDMode = ClientIDMode.Static;
-            divViewExpressionAlert.Attributes.Add("class", "alert alert-error fade in hide");
-            divViewExpressionAlert.Attributes.Add("style", "font-size: 14px;line-height: 20px;");
-
-            var btnViewExpressionAlert = new HtmlButton { InnerText = "x" };
-            btnViewExpressionAlert.Attributes.Add("class", "close");
-            btnViewExpressionAlert.Attributes.Add("data-dismiss", "alert");
-            divViewExpressionAlert.Controls.Add(btnViewExpressionAlert);
-
-            var divViewExpressionAlertText = new HtmlGenericControl("div");
-            divViewExpressionAlert.Controls.Add(divViewExpressionAlertText);
-            divModalBodyRowSpan1.Controls.Add(divViewExpressionAlert);
-            /* END ALERT */
-
-            divModalBodyRow2.Controls.Add(divModalBodyRowSpan1);
-
-            var divModalBodyRowSpan2 = new HtmlGenericControl("div");
-            divModalBodyRowSpan2.Attributes.Add("class", "span6");
-
-            var divSavedFilters = new HtmlGenericControl("div");
-            divSavedFilters.Attributes.Add("style", "overflow-y:auto; height:200px; padding:5px; border:1px solid whiteSmoke; font-size:14px; line-height:20px;");
-
-            if (views.Count >= 1)
-            {
-                //var hlSelectAll = new HtmlAnchor
-                //{
-                //    HRef = "#",
-                //    InnerText = "Select All",
-                //    Title = "Select all columns"
-                //};
-                ////hlSelectAll.Attributes.Add("onclick", "ColumnSelectionShowAll(this, false);");
-                //divSavedFilters.Controls.Add(hlSelectAll);
-
-                var ol = new HtmlGenericControl("ol");
-
-                foreach (var view in views)
-                {
-                    var li = new HtmlGenericControl("li");
-
-                    //var lbMakeDefault = new LinkButton
-                    //{
-                    //    Text = "<i class=\"icon-ok-circle\"></i>",
-                    //    ToolTip = "Default View"
-                    //};
-                    //li.Controls.Add(lbMakeDefault);
-
-                    //var cbVisible = new CheckBox();
-                    ////cbVisible.Attributes.Add("onclick", "ColumnSelectionChanged(this);");
-                    //cbVisible.Attributes.Add("data-index", view.ID.ToString());
-
-                    //li.Controls.Add(cbVisible);
-                    var litViewName = new Literal { Text = " " + view.Name };
-                    if (view.DefaultView)
+                    var ddlViews = new DropDownList
                     {
-                        litViewName.Text += " <i class=\"icon-asterisk\"></i>";
-                        li.Attributes.Add("title", "Default View");
-                        li.Attributes.Add("style", "font-weight: bold;");
-                    }
+                        ID = "ddl" + ID + "ViewExpressionList",
+                        ClientIDMode = ClientIDMode.Static,
+                        AutoPostBack = true,
+                        CssClass = "span1"
+                    };
+                    ddlViews.SelectedIndexChanged += ddlViews_SelectedIndexChanged;
 
-                    li.Controls.Add(litViewName);
-                    ol.Controls.Add(li);
+                    ddlViews.Items.Add(new ListItem("", "-1"));
+                    ddlViews.Items.AddRange(views.Select(x => new ListItem
+                    {
+                        Text = x.Name + (x.DefaultView ? " *" : ""),
+                        Value = x.ID.ToString()
+                    }).ToArray());
+
+                    divAppend.Controls.Add(ddlViews);
+
+                    var hlViewExpression = new HtmlAnchor
+                    {
+                        ID = "hl" + ID + "ViewExpression",
+                        ClientIDMode = ClientIDMode.Static,
+                        HRef = "#div" + ID + "ViewExpression",
+                        Title = "View Management",
+                        InnerHtml = "<i class=\"icon-eye-open\"></i>",
+                    };
+                    hlViewExpression.Attributes.Add("data-toggle", "modal");
+                    hlViewExpression.Attributes.Add("role", "button");
+                    hlViewExpression.Attributes.Add("style", "display: inline-block;");
+                    hlViewExpression.Attributes.Add("class", "btn add-on");
+
+                    divAppend.Controls.Add(hlViewExpression);
+                    phControl.Controls.Add(divAppend);
+                }
+                else
+                {
+                    var hlViewExpression = new HtmlAnchor
+                    {
+                        ID = "hl" + ID + "ViewExpression",
+                        ClientIDMode = ClientIDMode.Static,
+                        HRef = "#div" + ID + "ViewExpression",
+                        Title = "View Management",
+                        InnerHtml = "<i class=\"icon-eye-open\"></i>",
+                    };
+                    hlViewExpression.Attributes.Add("data-toggle", "modal");
+                    hlViewExpression.Attributes.Add("role", "button");
+                    hlViewExpression.Attributes.Add("style", "display: inline-block;margin-right: 10px;");
+                    hlViewExpression.Attributes.Add("class", "btn pull-right");
+
+                    phControl.Controls.Add(hlViewExpression);
                 }
 
-                divSavedFilters.Controls.Add(ol);
+                var divViewExpression = new HtmlGenericControl("div");
+                divViewExpression.ID = "div" + ID + "ViewExpression";
+                divViewExpression.ClientIDMode = ClientIDMode.Static;
+                divViewExpression.Attributes.Add("class", "modal hide fade");
+                divViewExpression.Attributes.Add("tabindex", "-1");
+                divViewExpression.Attributes.Add("role", "dialog");
+                divViewExpression.Attributes.Add("aria-labelledby", "h3" + ID + "ViewExpressionLabel");
+                divViewExpression.Attributes.Add("aria-hidden", "true");
+
+                /* START MODAL HEADER */
+                var divModalHeader = new HtmlGenericControl("div");
+                divModalHeader.Attributes.Add("class", "modal-header");
+
+                var btnCloseModal = new HtmlButton { InnerText = "x" };
+                btnCloseModal.Attributes.Add("type", "button");
+                btnCloseModal.Attributes.Add("class", "close");
+                btnCloseModal.Attributes.Add("data-dismiss", "modal");
+                btnCloseModal.Attributes.Add("aria-hidden", "true");
+                divModalHeader.Controls.Add(btnCloseModal);
+
+                var h3ModalLabel = new HtmlGenericControl("h3");
+                h3ModalLabel.ID = "h3" + ID + "ViewExpressionLabel";
+                h3ModalLabel.ClientIDMode = ClientIDMode.Static;
+                h3ModalLabel.InnerText = "View Management";
+                divModalHeader.Controls.Add(h3ModalLabel);
+
+                divViewExpression.Controls.Add(divModalHeader);
+                /* END MODAL HEADER */
+
+                /* START MODAL BODY */
+                var divModalBody = new HtmlGenericControl("div");
+                divModalBody.Attributes.Add("class", "modal-body");
+
+                var divModalBodyRow = new HtmlGenericControl("div");
+                divModalBodyRow.Attributes.Add("class", "row-fluid");
+
+                var divModalBodyRowSpan = new HtmlGenericControl("div");
+                divModalBodyRowSpan.Attributes.Add("class", "span12");
+
+                var txtViewName = new TextBox
+                {
+                    ID = "txt" + ID + "ViewExpressionTitle",
+                    ClientIDMode = ClientIDMode.Static
+                };
+                txtViewName.Attributes.Add("placeholder", "View name...");
+                divModalBodyRowSpan.Controls.Add(txtViewName);
+
+                divModalBodyRow.Controls.Add(divModalBodyRowSpan);
+                divModalBody.Controls.Add(divModalBodyRow);
+
+                var divModalBodyRow2 = new HtmlGenericControl("div");
+                divModalBodyRow2.Attributes.Add("class", "row-fluid");
+
+                var divModalBodyRowSpan1 = new HtmlGenericControl("div");
+                divModalBodyRowSpan1.Attributes.Add("class", "span6");
+
+                var divModalBodyRowSpan1Cb = new HtmlGenericControl("div");
+                divModalBodyRowSpan1Cb.ID = "div" + ID + "ViewExpressionCheckBoxes";
+                divModalBodyRowSpan1Cb.ClientIDMode = ClientIDMode.Static;
+
+                var cbSaveFilterLabel = new HtmlGenericControl("label");
+                cbSaveFilterLabel.Attributes.Add("class", "checkbox");
+                cbSaveFilterLabel.Controls.Add(new CheckBox
+                {
+                    Checked = true,
+                    ID = "cb" + ID + "ViewExpressionFilters",
+                    ClientIDMode = ClientIDMode.Static
+                });
+                cbSaveFilterLabel.Controls.Add(new Literal { Text = " Save Filters" });
+                divModalBodyRowSpan1Cb.Controls.Add(cbSaveFilterLabel);
+
+                var cbSaveSortingLabel = new HtmlGenericControl("label");
+                cbSaveSortingLabel.Attributes.Add("class", "checkbox");
+                cbSaveSortingLabel.Controls.Add(new CheckBox
+                {
+                    Checked = true,
+                    ID = "cb" + ID + "ViewExpressionSortings"
+                });
+                cbSaveSortingLabel.Controls.Add(new Literal { Text = " Save Sortings" });
+                divModalBodyRowSpan1Cb.Controls.Add(cbSaveSortingLabel);
+
+                var cbSaveColumnLabel = new HtmlGenericControl("label");
+                cbSaveColumnLabel.Attributes.Add("class", "checkbox");
+                cbSaveColumnLabel.Controls.Add(new CheckBox
+                {
+                    Checked = true,
+                    ID = "cb" + ID + "ViewExpressionColumns"
+                });
+                cbSaveColumnLabel.Controls.Add(new Literal { Text = " Save Columns" });
+                divModalBodyRowSpan1Cb.Controls.Add(cbSaveColumnLabel);
+
+                var cbSavePageSizeLabel = new HtmlGenericControl("label");
+                cbSavePageSizeLabel.Attributes.Add("class", "checkbox");
+                cbSavePageSizeLabel.Controls.Add(new CheckBox
+                {
+                    Checked = false,
+                    ID = "cb" + ID + "ViewExpressionPageSize"
+                });
+                cbSavePageSizeLabel.Controls.Add(new Literal { Text = " Save Page Size" });
+                divModalBodyRowSpan1Cb.Controls.Add(cbSavePageSizeLabel);
+
+                divModalBodyRowSpan1.Controls.Add(divModalBodyRowSpan1Cb);
+
+                var cbDefaultViewLabel = new HtmlGenericControl("label");
+                cbDefaultViewLabel.Attributes.Add("class", "checkbox");
+                cbDefaultViewLabel.Controls.Add(new CheckBox
+                {
+                    Checked = false,
+                    ID = "cb" + ID + "ViewExpressionDefaultView"
+                });
+                cbDefaultViewLabel.Controls.Add(new Literal { Text = " Make Default View" });
+                divModalBodyRowSpan1.Controls.Add(cbDefaultViewLabel);
+
+                /* START ALERT */
+                var divViewExpressionAlert = new HtmlGenericControl("div");
+                divViewExpressionAlert.ID = "div" + ID + "ViewExpressionAlert";
+                divViewExpressionAlert.ClientIDMode = ClientIDMode.Static;
+                divViewExpressionAlert.Attributes.Add("class", "alert alert-error fade in hide");
+                divViewExpressionAlert.Attributes.Add("style", "font-size: 14px;line-height: 20px;");
+
+                var btnViewExpressionAlert = new HtmlButton { InnerText = "x" };
+                btnViewExpressionAlert.Attributes.Add("class", "close");
+                btnViewExpressionAlert.Attributes.Add("data-dismiss", "alert");
+                divViewExpressionAlert.Controls.Add(btnViewExpressionAlert);
+
+                var divViewExpressionAlertText = new HtmlGenericControl("div");
+                divViewExpressionAlert.Controls.Add(divViewExpressionAlertText);
+                divModalBodyRowSpan1.Controls.Add(divViewExpressionAlert);
+                /* END ALERT */
+
+                divModalBodyRow2.Controls.Add(divModalBodyRowSpan1);
+
+                var divModalBodyRowSpan2 = new HtmlGenericControl("div");
+                divModalBodyRowSpan2.Attributes.Add("class", "span6");
+
+                var divSavedFilters = new HtmlGenericControl("div");
+                divSavedFilters.Attributes.Add("style", "overflow-y:auto; height:200px; padding:5px; border:1px solid whiteSmoke; font-size:14px; line-height:20px;");
+
+                if (views.Count >= 1)
+                {
+                    //var hlSelectAll = new HtmlAnchor
+                    //{
+                    //    HRef = "#",
+                    //    InnerText = "Select All",
+                    //    Title = "Select all columns"
+                    //};
+                    ////hlSelectAll.Attributes.Add("onclick", "ColumnSelectionShowAll(this, false);");
+                    //divSavedFilters.Controls.Add(hlSelectAll);
+
+                    var ol = new HtmlGenericControl("ol");
+
+                    foreach (var view in views)
+                    {
+                        var li = new HtmlGenericControl("li");
+
+                        //var lbMakeDefault = new LinkButton
+                        //{
+                        //    Text = "<i class=\"icon-ok-circle\"></i>",
+                        //    ToolTip = "Default View"
+                        //};
+                        //li.Controls.Add(lbMakeDefault);
+
+                        //var cbVisible = new CheckBox();
+                        ////cbVisible.Attributes.Add("onclick", "ColumnSelectionChanged(this);");
+                        //cbVisible.Attributes.Add("data-index", view.ID.ToString());
+
+                        //li.Controls.Add(cbVisible);
+                        var litViewName = new Literal { Text = " " + view.Name };
+                        if (view.DefaultView)
+                        {
+                            litViewName.Text += " <i class=\"icon-asterisk\"></i>";
+                            li.Attributes.Add("title", "Default View");
+                            li.Attributes.Add("style", "font-weight: bold;");
+                        }
+
+                        li.Controls.Add(litViewName);
+                        ol.Controls.Add(li);
+                    }
+
+                    divSavedFilters.Controls.Add(ol);
+                }
+                else
+                    divSavedFilters.Controls.Add(new Label { Text = "No views" });
+
+
+                divModalBodyRowSpan2.Controls.Add(divSavedFilters);
+                divModalBodyRow2.Controls.Add(divModalBodyRowSpan2);
+
+                divModalBody.Controls.Add(divModalBodyRow2);
+                divViewExpression.Controls.Add(divModalBody);
+                /* END MODAL BODY */
+
+                /* START MODAL FOOTER */
+                var divModalFooter = new HtmlGenericControl("div");
+                divModalFooter.Attributes.Add("class", "modal-footer");
+
+                var btnCloseModalFooter = new HtmlButton { InnerText = "Close" };
+                btnCloseModalFooter.Attributes.Add("class", "btn");
+                btnCloseModalFooter.Attributes.Add("data-dismiss", "modal");
+                btnCloseModalFooter.Attributes.Add("aria-hidden", "true");
+                divModalFooter.Controls.Add(btnCloseModalFooter);
+
+                var btnSaveViewManagement = new LinkButton { Text = "Save" };
+                btnSaveViewManagement.Click += btnSaveViewManagement_Click;
+                btnSaveViewManagement.Attributes.Add("class", "btn btn-primary");
+                btnSaveViewManagement.Attributes.Add("onclick", "return " + ClientID + "SaveView('#" + divViewExpression.ClientID + "', '#" + txtViewName.ClientID + "', '#" + divModalBodyRowSpan1Cb.ClientID + "', '#" + divViewExpressionAlert.ClientID + "');");
+                divModalFooter.Controls.Add(btnSaveViewManagement);
+
+                divViewExpression.Controls.Add(divModalFooter);
+                /* END MODAL FOOTER */
+
+                phControl.Controls.Add(divViewExpression);
             }
-            else
-                divSavedFilters.Controls.Add(new Label { Text = "No views" });
-
-
-            divModalBodyRowSpan2.Controls.Add(divSavedFilters);
-            divModalBodyRow2.Controls.Add(divModalBodyRowSpan2);
-
-            divModalBody.Controls.Add(divModalBodyRow2);
-            divViewExpression.Controls.Add(divModalBody);
-            /* END MODAL BODY */
-
-            /* START MODAL FOOTER */
-            var divModalFooter = new HtmlGenericControl("div");
-            divModalFooter.Attributes.Add("class", "modal-footer");
-
-            var btnCloseModalFooter = new HtmlButton { InnerText = "Close" };
-            btnCloseModalFooter.Attributes.Add("class", "btn");
-            btnCloseModalFooter.Attributes.Add("data-dismiss", "modal");
-            btnCloseModalFooter.Attributes.Add("aria-hidden", "true");
-            divModalFooter.Controls.Add(btnCloseModalFooter);
-
-            var btnSaveViewManagement = new LinkButton { Text = "Save" };
-            btnSaveViewManagement.Click += btnSaveViewManagement_Click;
-            btnSaveViewManagement.Attributes.Add("class", "btn btn-primary");
-            btnSaveViewManagement.Attributes.Add("onclick", "return " + ClientID + "SaveView('#" + divViewExpression.ClientID + "', '#" + txtViewName.ClientID + "', '#" + divModalBodyRowSpan1Cb.ClientID + "', '#" + divViewExpressionAlert.ClientID + "');");
-            divModalFooter.Controls.Add(btnSaveViewManagement);
-
-            divViewExpression.Controls.Add(divModalFooter);
-            /* END MODAL FOOTER */
-
-            phControl.Controls.Add(divViewExpression);
 
             return phControl;
         }
@@ -1818,7 +1903,7 @@ namespace GridViewEx
                     ToolTip = "Select number of records to display per page"
                 };
                 ddlPageRecords.SelectedIndexChanged += ddlPageRecords_SelectedIndexChanged;
-                ddlPageRecords.FillPageRecordsSelector(PagerSelectorOptions.Split(','), pageSize);
+                ddlPageRecords.FillPageRecordsSelector(PagerSelectorOptions.Split(','), pageSize, records);
                 divRecordsSelector.Controls.Add(ddlPageRecords);
                 divControl.Controls.Add(divRecordsSelector);
             }
@@ -1990,8 +2075,19 @@ namespace GridViewEx
                 {
                     var js = new JavaScriptSerializer();
 
-                    var columnSelection = js.Deserialize<List<ColumnExpression>>(HttpUtility.UrlDecode(cookie.Value));
-                    Context.Session[ID + "_Columns"] = columnSelection.OrderBy(x => x.Index).ToList();
+                    var columnSelections = js.Deserialize<List<ColumnExpressionCookie>>(HttpUtility.UrlDecode(cookie.Value));
+                    var oldColumnSelections = Context.Session[ID + "_Columns"] as List<ColumnExpression>;
+                    foreach (var oldColumnSelection in oldColumnSelections)
+                    {
+                        var columnSelection = columnSelections.SingleOrDefault(x => x.ID == oldColumnSelection.ID);
+                        if (columnSelection != null)
+                        {
+                            oldColumnSelection.Visible = columnSelection.V;
+                            oldColumnSelection.Index = columnSelection.I;
+                        }
+                    }
+
+                    Context.Session[ID + "_Columns"] = oldColumnSelections.OrderBy(x => x.Index).ToList();
 
                     if (ColumnSelectionChanged != null)
                         ColumnSelectionChanged(null, EventArgs.Empty);

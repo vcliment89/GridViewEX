@@ -1,3 +1,13 @@
+## v1.3.0 (September 18, 2013)
+- **Added 3rd level checked on the checkbox column type** (Uses bool? intead of bool).
+- **Page size selector 'All'**. Show all records.
+- **Ability to disable functionalities**. Like Compact Table, or the views.
+- Added new parameter for checkbox column allowing to add a tooltip.
+- Fixed "The method 'Skip' is only supported for sorted input in LINQ to Entities. The method 'OrderBy' must be called before the method 'Skip'." when using Entity Framework.
+- Column management cookie size reduceb by 60%.
+- Updated demo project.
+- Bug fixes.
+
 ## v1.2.1 (April 23, 2013)
 - **Added new type of column** to extend the checkbox allowing filters on it.
 - **Added demo project**. Shows how to implement a basic example of the GridViewEx.

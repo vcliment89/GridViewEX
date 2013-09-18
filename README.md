@@ -16,8 +16,8 @@ GridViewEX is a .NET extended Gridview lot more functional and powerful than the
  * Management of the above functions (Columns, filters & sorts).
 
 ## Dependencies
- * [jQuery v1.8.3](https://github.com/jquery/jquery)
- * [jQuery UI v1.9.2](https://github.com/jquery/jquery)
+ * [jQuery v1.9+](https://github.com/jquery/jquery)
+ * [jQuery UI v1.9.2+](https://github.com/jquery/jquery)
  * [Bootstrap v2.2.1](https://github.com/twitter/bootstrap)
  * [EPPlus v3.1.3.3](http://epplus.codeplex.com/)
 
