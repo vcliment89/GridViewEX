@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -117,7 +118,7 @@ namespace GridViewEx
         /// <summary>
         /// Stores if the column is visible or not
         /// </summary>
-        public bool V;
+        public int V;
         /// <summary>
         /// Stores the column order index
         /// </summary>
@@ -349,8 +350,8 @@ namespace GridViewEx
                             Decimal pValue;
                             if (Decimal.TryParse(item.ToString(), out pValue))
                                 text = pValue % 1 == 0
-                                    ? String.Format("{0:0%}", pValue)
-                                    : String.Format("{0:0.00%}", pValue);
+                                    ? String.Format(CultureInfo.InvariantCulture, "{0:0%}", pValue)
+                                    : String.Format(CultureInfo.InvariantCulture, "{0:0.00%}", pValue);
                             else
                                 text = item.ToString();
                             break;
@@ -358,8 +359,8 @@ namespace GridViewEx
                             Decimal cValue;
                             if (Decimal.TryParse(item.ToString(), out cValue))
                                 text = cValue % 1 == 0
-                                    ? String.Format("{0:C0}", cValue)
-                                    : String.Format("{0:C}", cValue);
+                                    ? String.Format(new CultureInfo("en-US"), "{0:C0}", cValue)
+                                    : String.Format(new CultureInfo("en-US"), "{0:C}", cValue);
                             else
                                 text = item.ToString();
                             break;
@@ -381,8 +382,8 @@ namespace GridViewEx
                             Decimal hValue;
                             if (Decimal.TryParse(item.ToString(), out hValue))
                                 text = hValue % 1 == 0
-                                    ? String.Format("{0:0 H}", hValue)
-                                    : String.Format("{0:0.00 H}", hValue);
+                                    ? String.Format(CultureInfo.InvariantCulture, "{0:0 H}", hValue)
+                                    : String.Format(CultureInfo.InvariantCulture, "{0:0.00 H}", hValue);
                             else
                                 text = item.ToString();
                             break;
@@ -595,7 +596,9 @@ namespace GridViewEx
                         : item,
                     Selected = item == "All"
                         ? pageSize == totalRecords
-                        : item == pageSize.ToString()
+                        : pageSize == totalRecords
+                            ? false
+                            : item == pageSize.ToString()
                 });
         }
 
@@ -652,16 +655,20 @@ namespace GridViewEx
         /// <param name="source">List with the data</param>
         /// <param name="columns">Selected columns to include on the file</param>
         /// <param name="title">Optional title of the file. If no title, it use 'Export' instead</param>
-        public static void ExportExcel(List<dynamic> source, List<ColumnExpression> columns, string title)
+        public static byte[] ExportExcel(List<dynamic> source, List<ColumnExpression> columns, string title)
         {
+            var excel = GetExcel(source, columns, title);
+
             HttpContext.Current.Response.Clear();
             HttpContext.Current.Response.Buffer = true;
             HttpContext.Current.Response.Charset = "";
             HttpContext.Current.Response.Cache.SetCacheability(HttpCacheability.NoCache);
             HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             HttpContext.Current.Response.AddHeader("content-disposition", "attachment; filename=" + HttpUtility.UrlEncode((String.IsNullOrWhiteSpace(title) ? "Export" : title) + ".xlsx"));
-            HttpContext.Current.Response.BinaryWrite(GetExcel(source, columns, title));
+            HttpContext.Current.Response.BinaryWrite(excel);
             HttpContext.Current.Response.Flush();
+
+            return excel;
         }
 
         /// <summary>

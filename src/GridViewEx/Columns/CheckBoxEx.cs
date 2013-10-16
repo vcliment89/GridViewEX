@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Web.UI;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
@@ -195,8 +194,10 @@ namespace GridViewEx.Columns
         /// <param name="e">Contains additional information about the event</param>
         protected void cell_DataBinding(object sender, EventArgs e)
         {
+            // Do all the work only if the control is visible
             var cell = sender as TableCell;
-            if (cell != null)
+            if (cell != null
+                && Visible)
             {
                 var controlClientIDDataField = this.Control.ClientID + DataField;
 

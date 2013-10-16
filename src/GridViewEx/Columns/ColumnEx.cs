@@ -124,6 +124,11 @@ namespace GridViewEx.Columns
             return new BoundField();
         }
 
+        public override bool Initialize(bool sortingEnabled, Control control)
+        {
+            return base.Initialize(sortingEnabled, control);
+        }
+
         /// <summary>
         /// Override the InitializeCell function to add the filters and header tooltips
         /// </summary>
@@ -140,7 +145,9 @@ namespace GridViewEx.Columns
                 cell.Controls.Add(new LinkButton
                 {
                     Text = HeaderText,
-                    ToolTip = String.IsNullOrWhiteSpace(HeaderToolTip) ? HeaderText : HeaderToolTip,
+                    ToolTip = String.IsNullOrWhiteSpace(HeaderToolTip)
+                        ? HeaderText
+                        : HeaderToolTip,
                     CommandName = "Sort",
                     CommandArgument = DataField
                 });
@@ -170,134 +177,142 @@ namespace GridViewEx.Columns
         /// </summary>
         private Control CreateFilterTextBoxControl()
         {
-            var controlClientID = this.Control.ClientID;
-            var controlClientIDDataField = controlClientID + DataField;
-
-            var divFilter = new HtmlGenericControl("div");
-            divFilter.Attributes.Add("class", controlClientID + "Filters");
-            divFilter.Attributes.Add("style", "display: none;");
-
-            var divInputPrepend = new HtmlGenericControl("div");
-            divInputPrepend.Attributes.Add("class", "input-prepend");
-
-            var divBtnGroup = new HtmlGenericControl("div");
-            divBtnGroup.Attributes.Add("class", "btn-group");
-
-            var btnFilter = new HtmlButton();
-            btnFilter.Attributes.Add("class", "btn dropdown-toggle");
-            btnFilter.Attributes.Add("title", "Filter By");
-            btnFilter.Attributes.Add("data-toggle", "dropdown");
-            btnFilter.InnerHtml = "<i class=\"icon-filter\"></i>";
-            divBtnGroup.Controls.Add(btnFilter);
-
-            var ulFilter = new HtmlGenericControl("ul");
-            ulFilter.Attributes.Add("class", "dropdown-menu");
-
-            var txtBox = new TextBox
+            // Do all the work only if the control is visible
+            if (Visible)
             {
-                ID = "txt" + controlClientIDDataField,
-                ClientIDMode = ClientIDMode.Static,
-                AutoPostBack = true,
-                CssClass = "span1"
-            };
+                var controlClientID = this.Control.ClientID;
+                var controlClientIDDataField = controlClientID + DataField;
 
-            var hiddenField = new HiddenField
-            {
-                ID = "hf" + controlClientIDDataField,
-                ClientIDMode = ClientIDMode.Static
-            };
+                var divFilter = new HtmlGenericControl("div");
+                divFilter.Attributes.Add("class", controlClientID + "Filters");
+                divFilter.Attributes.Add("style", "display: none;");
 
-            var liFilter = new HtmlGenericControl("li");
-            liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '= ');\">Is equal to</a>";
-            ulFilter.Controls.Add(liFilter);
+                var divInputPrepend = new HtmlGenericControl("div");
+                divInputPrepend.Attributes.Add("class", "input-prepend");
 
-            liFilter = new HtmlGenericControl("li");
-            liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!= ');\">Is not equal to</a>";
-            ulFilter.Controls.Add(liFilter);
+                var divBtnGroup = new HtmlGenericControl("div");
+                divBtnGroup.Attributes.Add("class", "btn-group");
 
-            // Check the data format to add the correct filter expressions
-            if (DataFormat == DataFormatEnum.Number
-                || DataFormat == DataFormatEnum.Currency
-                || DataFormat == DataFormatEnum.Hour
-                || DataFormat == DataFormatEnum.Percentage
-                || DataFormat == DataFormatEnum.Date
-                || DataFormat == DataFormatEnum.ShortDate)
-            {
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '> ');\">Is greater than</a>";
+                var btnFilter = new HtmlButton();
+                btnFilter.Attributes.Add("class", "btn dropdown-toggle");
+                btnFilter.Attributes.Add("title", "Filter By");
+                btnFilter.Attributes.Add("data-toggle", "dropdown");
+                btnFilter.InnerHtml = "<i class=\"icon-filter\"></i>";
+                divBtnGroup.Controls.Add(btnFilter);
+
+                var ulFilter = new HtmlGenericControl("ul");
+                ulFilter.Attributes.Add("class", "dropdown-menu");
+
+                var txtBox = new TextBox
+                {
+                    ID = "txt" + controlClientIDDataField,
+                    ClientIDMode = ClientIDMode.Static,
+                    AutoPostBack = true,
+                    CssClass = "span1"
+                };
+
+                var hiddenField = new HiddenField
+                {
+                    ID = "hf" + controlClientIDDataField,
+                    ClientIDMode = ClientIDMode.Static
+                };
+
+                var liFilter = new HtmlGenericControl("li");
+                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '= ');\">Is equal to</a>";
                 ulFilter.Controls.Add(liFilter);
 
                 liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '>= ');\">Is greater than or equal to</a>";
+                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!= ');\">Is not equal to</a>";
                 ulFilter.Controls.Add(liFilter);
 
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '< ');\">Is less than</a>";
-                ulFilter.Controls.Add(liFilter);
+                // Check the data format to add the correct filter expressions
+                if (DataFormat == DataFormatEnum.Number
+                    || DataFormat == DataFormatEnum.Currency
+                    || DataFormat == DataFormatEnum.Hour
+                    || DataFormat == DataFormatEnum.Percentage
+                    || DataFormat == DataFormatEnum.Date
+                    || DataFormat == DataFormatEnum.ShortDate)
+                {
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '> ');\">Is greater than</a>";
+                    ulFilter.Controls.Add(liFilter);
 
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '<= ');\">Is less than or equal to</a>";
-                ulFilter.Controls.Add(liFilter);
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '>= ');\">Is greater than or equal to</a>";
+                    ulFilter.Controls.Add(liFilter);
+
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '< ');\">Is less than</a>";
+                    ulFilter.Controls.Add(liFilter);
+
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '<= ');\">Is less than or equal to</a>";
+                    ulFilter.Controls.Add(liFilter);
+                }
+                else
+                {
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '* ');\">Contains</a>";
+                    ulFilter.Controls.Add(liFilter);
+
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!* ');\">Not contains</a>";
+                    ulFilter.Controls.Add(liFilter);
+
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '˄ ');\">Starts with</a>";
+                    ulFilter.Controls.Add(liFilter);
+
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '˅ ');\">Ends with</a>";
+                    ulFilter.Controls.Add(liFilter);
+
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!˄ ');\">Not starts with</a>";
+                    ulFilter.Controls.Add(liFilter);
+
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!˅ ');\">Not ends with</a>";
+                    ulFilter.Controls.Add(liFilter);
+                }
+
+                divBtnGroup.Controls.Add(ulFilter);
+                divInputPrepend.Controls.Add(divBtnGroup);
+
+                txtBox.TextChanged += new EventHandler(txtBox_TextChanged);
+                divInputPrepend.Controls.Add(txtBox);
+                divInputPrepend.Controls.Add(hiddenField);
+
+                ((GridViewEx)this.Control).JSScript += (DataFormat == DataFormatEnum.Date || DataFormat == DataFormatEnum.ShortDate)
+                    ? @"
+                    function " + controlClientIDDataField + @"Function() {
+                        $('#" + txtBox.ClientID + @"').datepicker().on('changeDate', function (ev) {
+                            var date = new Date(ev.date);
+                            $('#" + hiddenField.ClientID + @"').val($('#" + hiddenField.ClientID + @"').val() + date.toLocaleDateString());
+
+                            $('#" + txtBox.ClientID + @"').datepicker('hide');
+                            $('#" + txtBox.ClientID + @"').change();
+                        });
+                    }"
+                    : @"
+                    function " + controlClientIDDataField + @"Function() {
+                        $('#" + txtBox.ClientID + @"').removeAttr('onkeypress');
+                        var oldOnChange = $('#" + txtBox.ClientID + @"').attr('onchange');
+                        if (typeof oldOnChange != 'undefined') {
+                            var onChange = '$(\'#" + hiddenField.ClientID + @"\').val($(\'#" + hiddenField.ClientID + @"\').val() + $(\'#" + txtBox.ClientID + @"\').val());';
+                            $('#" + txtBox.ClientID + @"').attr('onchange', onChange + oldOnChange.substring(oldOnChange.indexOf('setTimeout')));
+                        }
+                    }";
+
+                ((GridViewEx)this.Control).JSScriptEndRequestHandler += controlClientIDDataField + @"Function();";
+                ((GridViewEx)this.Control).JSScriptDocumentReady += controlClientIDDataField + @"Function();";
+
+                divFilter.Controls.Add(divInputPrepend);
+
+                return divFilter;
             }
             else
-            {
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '* ');\">Contains</a>";
-                ulFilter.Controls.Add(liFilter);
-
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!* ');\">Not contains</a>";
-                ulFilter.Controls.Add(liFilter);
-
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '˄ ');\">Starts with</a>";
-                ulFilter.Controls.Add(liFilter);
-
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '˅ ');\">Ends with</a>";
-                ulFilter.Controls.Add(liFilter);
-
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!˄ ');\">Not starts with</a>";
-                ulFilter.Controls.Add(liFilter);
-
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!˅ ');\">Not ends with</a>";
-                ulFilter.Controls.Add(liFilter);
-            }
-
-            divBtnGroup.Controls.Add(ulFilter);
-            divInputPrepend.Controls.Add(divBtnGroup);
-
-            txtBox.TextChanged += new EventHandler(txtBox_TextChanged);
-            divInputPrepend.Controls.Add(txtBox);
-            divInputPrepend.Controls.Add(hiddenField);
-
-            ((GridViewEx)this.Control).JSScript += (DataFormat == DataFormatEnum.Date || DataFormat == DataFormatEnum.ShortDate)
-                ? @"
-                function " + controlClientIDDataField + @"Function() {
-                    $('#" + txtBox.ClientID + @"').datepicker().on('changeDate', function (ev) {
-                        var date = new Date(ev.date);
-                        $('#" + hiddenField.ClientID + @"').val($('#" + hiddenField.ClientID + @"').val() + date.toLocaleDateString());
-
-                        $('#" + txtBox.ClientID + @"').datepicker('hide');
-                        $('#" + txtBox.ClientID + @"').change();
-                    });
-                }"
-                : @"
-                function " + controlClientIDDataField + @"Function() {
-                    $('#" + txtBox.ClientID + @"').removeAttr('onkeypress');
-                    var oldOnChange = $('#" + txtBox.ClientID + @"').attr('onchange');
-                    var onChange = '$(\'#" + hiddenField.ClientID + @"\').val($(\'#" + hiddenField.ClientID + @"\').val() + $(\'#" + txtBox.ClientID + @"\').val());';
-                    $('#" + txtBox.ClientID + @"').attr('onchange', onChange + oldOnChange.substring(oldOnChange.indexOf('setTimeout')));
-                }";
-
-            ((GridViewEx)this.Control).JSScriptEndRequestHandler += controlClientIDDataField + @"Function();";
-            ((GridViewEx)this.Control).JSScriptDocumentReady += controlClientIDDataField + @"Function();";
-
-            divFilter.Controls.Add(divInputPrepend);
-
-            return divFilter;
+                return new Control();
         }
 
         /// <summary>
@@ -305,99 +320,107 @@ namespace GridViewEx.Columns
         /// </summary>
         private Control CreateFilterDropDownListControl()
         {
-            var controlClientID = this.Control.ClientID;
-            var controlClientIDDataField = controlClientID + DataField;
-
-            var divFilter = new HtmlGenericControl("div");
-            divFilter.Attributes.Add("class", controlClientID + "Filters");
-            divFilter.Attributes.Add("style", "display: none;");
-
-            var divInputPrepend = new HtmlGenericControl("div");
-            divInputPrepend.Attributes.Add("class", "input-prepend");
-
-            var divBtnGroup = new HtmlGenericControl("div");
-            divBtnGroup.Attributes.Add("class", "btn-group");
-
-            var btnFilter = new HtmlButton();
-            btnFilter.Attributes.Add("class", "btn dropdown-toggle");
-            btnFilter.Attributes.Add("title", "Filter By");
-            btnFilter.Attributes.Add("data-toggle", "dropdown");
-            btnFilter.InnerHtml = "<i class=\"icon-filter\"></i>";
-            divBtnGroup.Controls.Add(btnFilter);
-
-            var ulFilter = new HtmlGenericControl("ul");
-            ulFilter.Attributes.Add("class", "dropdown-menu");
-
-            var ddlDropDownList = new DropDownList
+            // Do all the work only if the control is visible
+            if (Visible)
             {
-                ID = "ddl" + controlClientID + DataField,
-                ClientIDMode = ClientIDMode.Static,
-                AutoPostBack = true,
-                CssClass = "span1"
-            };
-            ddlDropDownList.SelectedIndexChanged += new EventHandler(ddlDropDownList_SelectedIndexChanged);
+                var controlClientID = this.Control.ClientID;
+                var controlClientIDDataField = controlClientID + DataField;
 
-            if (DropDownDataSource != null)
-                ddlDropDownList.DataSource = DropDownDataSource;
+                var divFilter = new HtmlGenericControl("div");
+                divFilter.Attributes.Add("class", controlClientID + "Filters");
+                divFilter.Attributes.Add("style", "display: none;");
 
-            var hiddenField = new HiddenField
-            {
-                ID = "hf" + controlClientIDDataField,
-                ClientIDMode = ClientIDMode.Static
-            };
+                var divInputPrepend = new HtmlGenericControl("div");
+                divInputPrepend.Attributes.Add("class", "input-prepend");
 
-            var liFilter = new HtmlGenericControl("li");
-            liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '= ');\">Is equal to</a>";
-            ulFilter.Controls.Add(liFilter);
+                var divBtnGroup = new HtmlGenericControl("div");
+                divBtnGroup.Attributes.Add("class", "btn-group");
 
-            liFilter = new HtmlGenericControl("li");
-            liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '!= ');\">Is not equal to</a>";
-            ulFilter.Controls.Add(liFilter);
+                var btnFilter = new HtmlButton();
+                btnFilter.Attributes.Add("class", "btn dropdown-toggle");
+                btnFilter.Attributes.Add("title", "Filter By");
+                btnFilter.Attributes.Add("data-toggle", "dropdown");
+                btnFilter.InnerHtml = "<i class=\"icon-filter\"></i>";
+                divBtnGroup.Controls.Add(btnFilter);
 
-            // Check the data format to add the correct filter expressions
-            if (DataFormat == DataFormatEnum.Number
-                || DataFormat == DataFormatEnum.Currency
-                || DataFormat == DataFormatEnum.Hour
-                || DataFormat == DataFormatEnum.Percentage
-                || DataFormat == DataFormatEnum.Date
-                || DataFormat == DataFormatEnum.ShortDate)
-            {
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '> ');\">Is greater than</a>";
+                var ulFilter = new HtmlGenericControl("ul");
+                ulFilter.Attributes.Add("class", "dropdown-menu");
+
+                var ddlDropDownList = new DropDownList
+                {
+                    ID = "ddl" + controlClientID + DataField,
+                    ClientIDMode = ClientIDMode.Static,
+                    AutoPostBack = true,
+                    CssClass = "span1"
+                };
+                ddlDropDownList.SelectedIndexChanged += new EventHandler(ddlDropDownList_SelectedIndexChanged);
+
+                if (DropDownDataSource != null)
+                    ddlDropDownList.DataSource = DropDownDataSource;
+
+                var hiddenField = new HiddenField
+                {
+                    ID = "hf" + controlClientIDDataField,
+                    ClientIDMode = ClientIDMode.Static
+                };
+
+                var liFilter = new HtmlGenericControl("li");
+                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '= ');\">Is equal to</a>";
                 ulFilter.Controls.Add(liFilter);
 
                 liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '>= ');\">Is greater than or equal to</a>";
+                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '!= ');\">Is not equal to</a>";
                 ulFilter.Controls.Add(liFilter);
 
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '< ');\">Is less than</a>";
-                ulFilter.Controls.Add(liFilter);
+                // Check the data format to add the correct filter expressions
+                if (DataFormat == DataFormatEnum.Number
+                    || DataFormat == DataFormatEnum.Currency
+                    || DataFormat == DataFormatEnum.Hour
+                    || DataFormat == DataFormatEnum.Percentage
+                    || DataFormat == DataFormatEnum.Date
+                    || DataFormat == DataFormatEnum.ShortDate)
+                {
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '> ');\">Is greater than</a>";
+                    ulFilter.Controls.Add(liFilter);
 
-                liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '<= ');\">Is less than or equal to</a>";
-                ulFilter.Controls.Add(liFilter);
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '>= ');\">Is greater than or equal to</a>";
+                    ulFilter.Controls.Add(liFilter);
+
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '< ');\">Is less than</a>";
+                    ulFilter.Controls.Add(liFilter);
+
+                    liFilter = new HtmlGenericControl("li");
+                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '<= ');\">Is less than or equal to</a>";
+                    ulFilter.Controls.Add(liFilter);
+                }
+
+                divBtnGroup.Controls.Add(ulFilter);
+                divInputPrepend.Controls.Add(divBtnGroup);
+
+                divInputPrepend.Controls.Add(ddlDropDownList);
+                divInputPrepend.Controls.Add(hiddenField);
+
+                ((GridViewEx)this.Control).JSScript += @"
+                    function " + this.Control.ClientID + DataField + @"Function() {
+                        var oldOnChange = $('#" + ddlDropDownList.ClientID + @"').attr('onchange');
+                        if (typeof oldOnChange != 'undefined') {
+                            var onChange = '$(\'#" + hiddenField.ClientID + @"\').val($(\'#" + hiddenField.ClientID + @"\').val() + $(\'#" + ddlDropDownList.ClientID + @" option:selected\').val());';
+                            $('#" + ddlDropDownList.ClientID + @"').attr('onchange', onChange + oldOnChange.substring(oldOnChange.indexOf('setTimeout')));
+                        }
+                    }";
+
+                ((GridViewEx)this.Control).JSScriptEndRequestHandler += controlClientIDDataField + @"Function();";
+                ((GridViewEx)this.Control).JSScriptDocumentReady += controlClientIDDataField + @"Function();";
+
+                divFilter.Controls.Add(divInputPrepend);
+
+                return divFilter;
             }
-
-            divBtnGroup.Controls.Add(ulFilter);
-            divInputPrepend.Controls.Add(divBtnGroup);
-
-            divInputPrepend.Controls.Add(ddlDropDownList);
-            divInputPrepend.Controls.Add(hiddenField);
-
-            ((GridViewEx)this.Control).JSScript += @"
-                function " + this.Control.ClientID + DataField + @"Function() {
-                    var oldOnChange = $('#" + ddlDropDownList.ClientID + @"').attr('onchange');
-                    var onChange = '$(\'#" + hiddenField.ClientID + @"\').val($(\'#" + hiddenField.ClientID + @"\').val() + $(\'#" + ddlDropDownList.ClientID + @" option:selected\').val());';
-                    $('#" + ddlDropDownList.ClientID + @"').attr('onchange', onChange + oldOnChange);
-                }";
-
-            ((GridViewEx)this.Control).JSScriptEndRequestHandler += controlClientIDDataField + @"Function();";
-            ((GridViewEx)this.Control).JSScriptDocumentReady += controlClientIDDataField + @"Function();";
-
-            divFilter.Controls.Add(divInputPrepend);
-
-            return divFilter;
+            else
+                return new Control();
         }
         #endregion
 
@@ -427,7 +450,7 @@ namespace GridViewEx.Columns
                             Decimal pValue;
                             if (Decimal.TryParse(value, out pValue))
                             {
-                                var pText = pValue % 1 == 0 ? String.Format("{0:0%}", pValue) : String.Format("{0:0.00%}", pValue);
+                                var pText = pValue % 1 == 0 ? String.Format(CultureInfo.InvariantCulture, "{0:0%}", pValue) : String.Format(CultureInfo.InvariantCulture, "{0:0.00%}", pValue);
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
                                     if (!String.IsNullOrWhiteSpace(tooltip))
@@ -458,7 +481,7 @@ namespace GridViewEx.Columns
                             Decimal cValue;
                             if (Decimal.TryParse(value, out cValue))
                             {
-                                var cText = cValue % 1 == 0 ? String.Format("{0:C0}", cValue) : String.Format("{0:C}", cValue);
+                                var cText = cValue % 1 == 0 ? String.Format(new CultureInfo("en-US"), "{0:C0}", cValue) : String.Format(new CultureInfo("en-US"), "{0:C}", cValue);
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
                                     if (!String.IsNullOrWhiteSpace(tooltip))
@@ -551,7 +574,7 @@ namespace GridViewEx.Columns
                             Decimal hValue;
                             if (Decimal.TryParse(value, out hValue))
                             {
-                                var hText = hValue % 1 == 0 ? String.Format("{0:0 H}", hValue) : String.Format("{0:0.00 H}", hValue);
+                                var hText = hValue % 1 == 0 ? String.Format(CultureInfo.InvariantCulture, "{0:0 H}", hValue) : String.Format(CultureInfo.InvariantCulture, "{0:0.00 H}", hValue);
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
                                     if (!String.IsNullOrWhiteSpace(tooltip))
@@ -713,7 +736,7 @@ namespace GridViewEx.Columns
                     break;
                 case DataFormatEnum.Currency:
                     Decimal cValue;
-                    if (Decimal.TryParse(filterText, NumberStyles.Currency, CultureInfo.CurrentCulture, out cValue))
+                    if (Decimal.TryParse(filterText, NumberStyles.Currency, CultureInfo.InvariantCulture, out cValue))
                         filterText = cValue.ToString();
                     break;
                 case DataFormatEnum.Date:

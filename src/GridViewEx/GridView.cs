@@ -466,7 +466,8 @@ namespace GridViewEx
                             .scrollWidth);
                 }";
 
-            if (IsCompactShown)
+            if (IsCompactShown
+                || IsCompact)
                 jsScript += @"
                     function " + ClientID + @"CompactTable(isCompact) {
                         " + ClientID + @"SizeCompact = isCompact;
@@ -619,7 +620,7 @@ namespace GridViewEx
                         });
 
                         $.map(arr, function (elementOfArray, indexInArray) {
-                            elementOfArray.V = isShowAll;
+                            elementOfArray.V = Number(isShowAll);
                         });
 
                         $(hfColumnsSelectedID).val(JSON.stringify(arr));
@@ -632,10 +633,10 @@ namespace GridViewEx
 
                         $.map(arr, function (elementOfArray, indexInArray) {
                             if (elementOfArray.ID == $(cb).attr('data-field')) {
-                                elementOfArray.V = $(cb).is(':checked');
+                                elementOfArray.V = Number($(cb).is(':checked'));
                             }
                         });
-
+                        
                         $(hfColumnsSelectedID).val(JSON.stringify(arr));
                         document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
                         $(lbApplyID).show();
@@ -762,6 +763,16 @@ namespace GridViewEx
                     if (" + ClientID + @"IsFilterShown)
                         " + ClientID + @"ToggleInlineFilter(true);
 
+                    var cookies = document.cookie.split(';');
+                    for (var i = 0; i < cookies.length; i++) {
+                        var equals = cookies[i].indexOf('=');
+                        var name = equals > -1
+                            ? cookies[i].substr(0, equals)
+                            : cookies[i];
+                        if (name.indexOf('_ColumnsSelected') != -1)
+                            document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                    }
+                        
                     " + ClientID + @"DeleteAlert();
 
                     " + ClientID + @"CreateTopScrollbar();
@@ -838,11 +849,14 @@ namespace GridViewEx
             if (!Page.IsPostBack)
             {
                 bool keepSession = false;
-                bool.TryParse(Context.Request["ks"], out keepSession);
+                if (Context.Request["ks"] != null)
+                    bool.TryParse(Context.Request["ks"], out keepSession);
+
                 bool defaultView = Convert.ToBoolean(Context.Session[ID + "_DefaultView"]);
 
-                if (!keepSession
-                    && !defaultView)
+                if ((!keepSession
+                        && !defaultView)
+                    || Context.Session[ID + "_SortExpressions"] == null)
                 {
                     Context.Session[ID + "_PageIndex"] = PageIndex;
                     Context.Session[ID + "_PageSize"] = PageSize;
@@ -1403,7 +1417,7 @@ namespace GridViewEx
                     Value = js.Serialize(columns.Select(x => new
                     {
                         ID = x.ID,
-                        V = x.Visible,
+                        V = Convert.ToInt32(x.Visible),
                         I = x.Index
                     }))
                 };
@@ -2082,7 +2096,7 @@ namespace GridViewEx
                         var columnSelection = columnSelections.SingleOrDefault(x => x.ID == oldColumnSelection.ID);
                         if (columnSelection != null)
                         {
-                            oldColumnSelection.Visible = columnSelection.V;
+                            oldColumnSelection.Visible = Convert.ToBoolean(columnSelection.V);
                             oldColumnSelection.Index = columnSelection.I;
                         }
                     }

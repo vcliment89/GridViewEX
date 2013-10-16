@@ -47,14 +47,39 @@
             <param name="sender">Object which has raised the event</param>
             <param name="e">Contains additional information about the event</param>
         </member>
+        <member name="P:GridViewEx.Columns.CheckBoxEx.RowIndex">
+            <summary>
+            Stores the row index
+            </summary>
+        </member>
         <member name="P:GridViewEx.Columns.CheckBoxEx.HeaderToolTip">
             <summary>
             Stores the header tooltip. If not defined then use the HeaderText
             </summary>
         </member>
+        <member name="P:GridViewEx.Columns.CheckBoxEx.AllowIndeterminateState">
+            <summary>
+            Stores if the indeterminate state is allowed or not as NULL value
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.CheckBoxEx.DisableStateMode">
+            <summary>
+            Stores if the checkbox is editable or not whenever the condition is meet
+            </summary>
+        </member>
         <member name="P:GridViewEx.Columns.CheckBoxEx.DataField">
             <summary>
             Stores the data field
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.CheckBoxEx.DataFieldToolTip">
+            <summary>
+            Stores the data field for the tool tip
+            </summary>
+        </member>
+        <member name="P:GridViewEx.Columns.CheckBoxEx.DataFieldID">
+            <summary>
+            Stores the data field for the id
             </summary>
         </member>
         <member name="E:GridViewEx.Columns.CheckBoxEx.FilterApplied">
@@ -172,6 +197,11 @@
             Stores the data field
             </summary>
         </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.DataFieldToolTip">
+            <summary>
+            Stores the data field for the tool tip
+            </summary>
+        </member>
         <member name="E:GridViewEx.Columns.ColumnEx.FilterApplied">
             <summary>
             Event fired when the filter is applied
@@ -237,6 +267,11 @@
             Class to store the column expression
             </summary>
         </member>
+        <member name="F:GridViewEx.ColumnExpression.ID">
+            <summary>
+            Stores the assigned ID
+            </summary>
+        </member>
         <member name="F:GridViewEx.ColumnExpression.Column">
             <summary>
             Stores the column name (DataField)
@@ -270,6 +305,26 @@
         <member name="F:GridViewEx.ColumnExpression.DataFormatExpression">
             <summary>
             Stores the column data format expression in case DataFormat is set to 'Expression'
+            </summary>
+        </member>
+        <member name="T:GridViewEx.ColumnExpressionCookie">
+            <summary>
+            Class to store the column expression
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpressionCookie.ID">
+            <summary>
+            Stores the assigned ID
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpressionCookie.V">
+            <summary>
+            Stores if the column is visible or not
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpressionCookie.I">
+            <summary>
+            Stores the column order index
             </summary>
         </member>
         <member name="T:GridViewEx.ViewExpression">
@@ -377,6 +432,41 @@
             Custom expression. Need to fill also DataFormatExpression
             </summary>
         </member>
+        <member name="T:GridViewEx.CheckboxDisabledModesEnum">
+            <summary>
+            Enumerator with the checkboxes disabled modes
+            </summary>
+        </member>
+        <member name="F:GridViewEx.CheckboxDisabledModesEnum.None">
+            <summary>
+            Default. Any disabled
+            </summary>
+        </member>
+        <member name="F:GridViewEx.CheckboxDisabledModesEnum.All">
+            <summary>
+            All textboxes disabled
+            </summary>
+        </member>
+        <member name="F:GridViewEx.CheckboxDisabledModesEnum.Unchecked">
+            <summary>
+            Only checkboxes with false value
+            </summary>
+        </member>
+        <member name="F:GridViewEx.CheckboxDisabledModesEnum.Checked">
+            <summary>
+            Only checkboxes with true value
+            </summary>
+        </member>
+        <member name="F:GridViewEx.CheckboxDisabledModesEnum.Indeterminate">
+            <summary>
+            Only checkboxes with NULL value
+            </summary>
+        </member>
+        <member name="F:GridViewEx.CheckboxDisabledModesEnum.CheckedOrIndeterminate">
+            <summary>
+            Only checkboxes with true or NULL value
+            </summary>
+        </member>
         <member name="T:GridViewEx.Extensions">
             <summary>
             Extension methods used by GridViewEx
@@ -423,13 +513,14 @@
             <param name="pageIndex">Page index</param>
             <param name="pageSize">Page size</param>
         </member>
-        <member name="M:GridViewEx.Extensions.FillPageRecordsSelector(System.Web.UI.WebControls.DropDownList,System.String[],System.Int32)">
+        <member name="M:GridViewEx.Extensions.FillPageRecordsSelector(System.Web.UI.WebControls.DropDownList,System.String[],System.Int32,System.Int32)">
             <summary>
             Fill the custom pager size dropdownlist
             </summary>
             <param name="ddl">Dropdown list to fill</param>
             <param name="pagerSelectorOptions">PagerSelectorOptions from the table definition</param>
             <param name="pageSize">Page size</param>
+            <param name="totalRecords">Total records on the table</param>
         </member>
         <member name="M:GridViewEx.Extensions.GetExpressionType(System.String)">
             <summary>
@@ -661,14 +752,29 @@
             Stores the JS function calls to add them inside the JS BeginRequestHandler
             </summary>
         </member>
+        <member name="P:GridViewEx.GridViewEx.JSScriptBeginRequestHandlerDelayed">
+            <summary>
+            Stores the JS function calls to add them inside the JS BeginRequestHandler (Delayed scripts)
+            </summary>
+        </member>
         <member name="P:GridViewEx.GridViewEx.JSScriptEndRequestHandler">
             <summary>
             Stores the JS function calls to add them inside the JS EndRequestHandler
             </summary>
         </member>
+        <member name="P:GridViewEx.GridViewEx.JSScriptEndRequestHandlerDelayed">
+            <summary>
+            Stores the JS function calls to add them inside the JS EndRequestHandler (Delayed scripts)
+            </summary>
+        </member>
         <member name="P:GridViewEx.GridViewEx.JSScriptDocumentReady">
             <summary>
             Stores the JS function calls to add them inside the JS jQuery DocumentReady
+            </summary>
+        </member>
+        <member name="P:GridViewEx.GridViewEx.JSScriptDocumentReadyDelayed">
+            <summary>
+            Stores the JS function calls to add them inside the JS EndRequestHandler (Delayed scripts)
             </summary>
         </member>
         <member name="P:GridViewEx.GridViewEx.Title">
@@ -692,6 +798,11 @@
             Used to set the default size of the table
             </summary>
         </member>
+        <member name="P:GridViewEx.GridViewEx.IsCompactShown">
+            <summary>
+            Used to set if the compact button will be displayed
+            </summary>
+        </member>
         <member name="P:GridViewEx.GridViewEx.IsFilterShown">
             <summary>
             Used to set if by default the inline filters will be displayed
@@ -709,7 +820,7 @@
         </member>
         <member name="P:GridViewEx.GridViewEx.PagerSelectorOptions">
             <summary>
-            Set the pager available option of the drop down list. By default is set to "10,50,100"
+            Set the pager available option of the drop down list. By default is set to "10,50,100,All"
             </summary>
             <example>  
             PagerSelectorOptions="5,10,20,40,80"
