@@ -96,6 +96,10 @@ namespace GridViewEx
         /// </summary>
         public int Index;
         /// <summary>
+        /// Stores the column order index for display
+        /// </summary>
+        public int DisplayIndex;
+        /// <summary>
         /// Stores the column data format
         /// </summary>
         public DataFormatEnum DataFormat;
@@ -298,7 +302,8 @@ namespace GridViewEx
         /// <param name="dataField">Column than we want the data</param>
         /// <param name="dataFormat">Type of data</param>
         /// <param name="dataFormatExpression">If we use a custom expression, here is where we pass it</param>
-        internal static List<ListItem> GetDropDownDataSource<T>(this IQueryable<T> query, string dataField, DataFormatEnum dataFormat, string dataFormatExpression)
+        /// <param name="cultureInfo">Culture information so is same on the whole project</param>
+        internal static List<ListItem> GetDropDownDataSource<T>(this IQueryable<T> query, string dataField, DataFormatEnum dataFormat, string dataFormatExpression, CultureInfo cultureInfo)
         {
             var ddlSource = new List<ListItem>();
 
@@ -350,8 +355,8 @@ namespace GridViewEx
                             Decimal pValue;
                             if (Decimal.TryParse(item.ToString(), out pValue))
                                 text = pValue % 1 == 0
-                                    ? String.Format(CultureInfo.InvariantCulture, "{0:0%}", pValue)
-                                    : String.Format(CultureInfo.InvariantCulture, "{0:0.00%}", pValue);
+                                    ? String.Format(cultureInfo, "{0:0%}", pValue)
+                                    : String.Format(cultureInfo, "{0:0.00%}", pValue);
                             else
                                 text = item.ToString();
                             break;
@@ -359,8 +364,8 @@ namespace GridViewEx
                             Decimal cValue;
                             if (Decimal.TryParse(item.ToString(), out cValue))
                                 text = cValue % 1 == 0
-                                    ? String.Format(new CultureInfo("en-US"), "{0:C0}", cValue)
-                                    : String.Format(new CultureInfo("en-US"), "{0:C}", cValue);
+                                    ? String.Format(cultureInfo, "{0:C0}", cValue)
+                                    : String.Format(cultureInfo, "{0:C}", cValue);
                             else
                                 text = item.ToString();
                             break;
@@ -382,8 +387,8 @@ namespace GridViewEx
                             Decimal hValue;
                             if (Decimal.TryParse(item.ToString(), out hValue))
                                 text = hValue % 1 == 0
-                                    ? String.Format(CultureInfo.InvariantCulture, "{0:0 H}", hValue)
-                                    : String.Format(CultureInfo.InvariantCulture, "{0:0.00 H}", hValue);
+                                    ? String.Format(cultureInfo, "{0:0 H}", hValue)
+                                    : String.Format(cultureInfo, "{0:0.00 H}", hValue);
                             else
                                 text = item.ToString();
                             break;
@@ -522,7 +527,7 @@ namespace GridViewEx
         /// <param name="totalRecordCount">Number of records</param>
         /// <param name="pageIndex">Page index</param>
         /// <param name="pageSize">Page size</param>
-        internal static List<ListItem> FillPager(int totalRecordCount, int pageIndex, int pageSize)
+        internal static List<ListItem> FillPager(int totalRecordCount, int pageIndex, int pageSize, double? bootstrapVersion)
         {
             var pages = new List<ListItem>();
 
@@ -531,7 +536,7 @@ namespace GridViewEx
             {
                 var numberPages = new List<ListItem>();
                 ListItem previousDots = null;
-                int numberElements = 5;
+                int numberElements = 1;
                 int aftli = 0;
 
                 for (int i = 1; i <= pageCount; i++)
@@ -548,15 +553,20 @@ namespace GridViewEx
                         aftli++;
                     }
                 }
-
-                pages.Add(new ListItem("FIRST", "1", pageIndex + 1 > 1));
+                if (bootstrapVersion >= 3)
+                    pages.Add(new ListItem("<span class=\"glyphicon glyphicon-step-backward\"></span>", "1", pageIndex + 1 > 1));
+                else
+                    pages.Add(new ListItem("<span class=\"icon-step-backward\"></span>", "1", pageIndex + 1 > 1));
 
                 // Add previous dots if necessary
                 if (previousDots != null)
                     pages.Add(previousDots);
 
                 pages.AddRange(numberPages);
-                pages.Add(new ListItem("LAST", pageCount.ToString(), pageIndex + 1 < pageCount));
+                if (bootstrapVersion >= 3)
+                    pages.Add(new ListItem("<span class=\"glyphicon glyphicon-step-forward\"></span>", pageCount.ToString(), pageIndex + 1 < pageCount));
+                else
+                    pages.Add(new ListItem("<span class=\"icon-step-forward\"></span>", pageCount.ToString(), pageIndex + 1 < pageCount));
             }
 
             return pages;
@@ -588,18 +598,29 @@ namespace GridViewEx
             });
 
             foreach (var item in items)
-                ddl.Items.Add(new ListItem
-                {
-                    Text = item,
-                    Value = item == "All"
-                        ? totalRecords.ToString()
-                        : item,
-                    Selected = item == "All"
-                        ? pageSize == totalRecords
-                        : pageSize == totalRecords
+            {
+                int i;
+                if (item != "All"
+                    && int.TryParse(item, out i)
+                    && i <= totalRecords)
+                    ddl.Items.Add(new ListItem
+                    {
+                        Text = item,
+                        Value = item,
+                        Selected = pageSize == totalRecords
                             ? false
                             : item == pageSize.ToString()
-                });
+                    });
+                else if (item == "All")
+                {
+                    ddl.Items.Add(new ListItem
+                    {
+                        Text = item,
+                        Value = totalRecords.ToString(),
+                        Selected = pageSize == totalRecords
+                    });
+                }
+            }
         }
 
         /// <summary>
@@ -666,7 +687,7 @@ namespace GridViewEx
             HttpContext.Current.Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             HttpContext.Current.Response.AddHeader("content-disposition", "attachment; filename=" + HttpUtility.UrlEncode((String.IsNullOrWhiteSpace(title) ? "Export" : title) + ".xlsx"));
             HttpContext.Current.Response.BinaryWrite(excel);
-            HttpContext.Current.Response.Flush();
+            HttpContext.Current.Response.End();
 
             return excel;
         }
@@ -697,7 +718,8 @@ namespace GridViewEx
 
                 // Create new column and add to DataTable.
                 PropertyInfo[] properties = source[0].GetType().GetProperties();
-                foreach (var column in columns.Where(x => x.Visible))
+                foreach (var column in columns.Where(x => x.Visible
+                    && x.Type != "TemplateField"))
                 {
                     var property = properties.SingleOrDefault(x => x.Name == column.Column);
                     if (property != null)
@@ -717,7 +739,9 @@ namespace GridViewEx
                     foreach (var dc in dt.Columns)
                     {
                         // Check if the column is visible to incle it or not
-                        if (columns.Select(x => new { ColumnName = (string)x.Column, Visible = (bool)x.Visible }).Any(x => x.ColumnName == dc.ToString() && x.Visible))
+                        if (columns.Select(x => new { ColumnName = (string)x.Column, Visible = (bool)x.Visible, Type = x.Type }).Any(x => x.ColumnName == dc.ToString()
+                            && x.Visible
+                            && x.Type != "TemplateField"))
                             dr[dc.ToString()] = item.GetType().GetProperty(dc.ToString()).GetValue(item, null) ?? DBNull.Value;
                     }
 

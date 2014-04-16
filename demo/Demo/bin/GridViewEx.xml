@@ -101,6 +101,11 @@
             Override the CreateField function
             </summary>
         </member>
+        <member name="M:GridViewEx.Columns.ColumnEx.Initialize(System.Boolean,System.Web.UI.Control)">
+            <summary>
+            Override the Initialize function
+            </summary>
+        </member>
         <member name="M:GridViewEx.Columns.ColumnEx.InitializeCell(System.Web.UI.WebControls.DataControlFieldCell,System.Web.UI.WebControls.DataControlCellType,System.Web.UI.WebControls.DataControlRowState,System.Int32)">
             <summary>
             Override the InitializeCell function to add the filters and header tooltips
@@ -202,6 +207,11 @@
             Stores the data field for the tool tip
             </summary>
         </member>
+        <member name="P:GridViewEx.Columns.ColumnEx.DataFieldCurrencySymbol">
+            <summary>
+            Stores the data field for the currency symbol
+            </summary>
+        </member>
         <member name="E:GridViewEx.Columns.ColumnEx.FilterApplied">
             <summary>
             Event fired when the filter is applied
@@ -295,6 +305,11 @@
         <member name="F:GridViewEx.ColumnExpression.Index">
             <summary>
             Stores the column order index
+            </summary>
+        </member>
+        <member name="F:GridViewEx.ColumnExpression.DisplayIndex">
+            <summary>
+            Stores the column order index for display
             </summary>
         </member>
         <member name="F:GridViewEx.ColumnExpression.DataFormat">
@@ -483,7 +498,7 @@
             <param name="query">Query where to apply the sortings</param>
             <param name="sortExpressions">Sort expressions</param>
         </member>
-        <member name="M:GridViewEx.Extensions.GetDropDownDataSource``1(System.Linq.IQueryable{``0},System.String,GridViewEx.DataFormatEnum,System.String)">
+        <member name="M:GridViewEx.Extensions.GetDropDownDataSource``1(System.Linq.IQueryable{``0},System.String,GridViewEx.DataFormatEnum,System.String,System.Globalization.CultureInfo)">
             <summary>
             Used to fill the filter dropdown list from the <paramref name="query"/>
             </summary>
@@ -491,6 +506,7 @@
             <param name="dataField">Column than we want the data</param>
             <param name="dataFormat">Type of data</param>
             <param name="dataFormatExpression">If we use a custom expression, here is where we pass it</param>
+            <param name="cultureInfo">Culture information so is same on the whole project</param>
         </member>
         <member name="M:GridViewEx.Extensions.Filter``1(System.Linq.IQueryable{``0},System.Collections.Generic.List{GridViewEx.FilterExpression})">
             <summary>
@@ -505,7 +521,7 @@
             </summary>
             <param name="sortDirection">Query where to apply the sortings</param>
         </member>
-        <member name="M:GridViewEx.Extensions.FillPager(System.Int32,System.Int32,System.Int32)">
+        <member name="M:GridViewEx.Extensions.FillPager(System.Int32,System.Int32,System.Int32,System.Nullable{System.Double})">
             <summary>
             Create the custom pager list
             </summary>
@@ -777,6 +793,11 @@
             Stores the JS function calls to add them inside the JS EndRequestHandler (Delayed scripts)
             </summary>
         </member>
+        <member name="P:GridViewEx.GridViewEx.AlertMessageClass">
+            <summary>
+            Stores the alert message CSS class, so it ca change for errors, warnings...
+            </summary>
+        </member>
         <member name="P:GridViewEx.GridViewEx.Title">
             <summary>
             Used to title the table
@@ -826,6 +847,14 @@
             PagerSelectorOptions="5,10,20,40,80"
             </example>
         </member>
+        <member name="P:GridViewEx.GridViewEx.BootstrapVersion">
+            <summary>
+            Set the version of bootstrap used
+            </summary>
+            <example>  
+            2.3
+            </example>
+        </member>
         <member name="P:GridViewEx.GridViewEx.SortExpressions">
             <summary>
             Set the default Sort Expressions of the table
@@ -841,6 +870,11 @@
             });
             </code> 
             </example> 
+        </member>
+        <member name="P:GridViewEx.GridViewEx.CultureInfo">
+            <summary>
+            Set the culture info used by the table. Default set to CultureInfo.InvariantCulture
+            </summary>
         </member>
         <member name="E:GridViewEx.GridViewEx.SortingChanged">
             <summary>

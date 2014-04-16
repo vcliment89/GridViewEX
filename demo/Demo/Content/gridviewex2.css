@@ -1,0 +1,7 @@
+﻿/*!
+ * GridViewEX v1.4.0 (https://github.com/vcliment89/GridViewEX)
+ * Copyright 2013-2014 Vicent Climent
+ * Licensed under MIT (https://github.com/vcliment89/GridViewEX/blob/master/LICENSE)
+ */
+
+.table thead th{vertical-align:top}.grid-view .grid-view-table{overflow-x:auto;overflow-y:hidden}.grid-view .grid-view-table .alert{margin-bottom:0}.grid-view .overlay{background-color:#000;moz-opacity:.5;khtml-opacity:.5;opacity:.5;filter:alpha(opacity=50);position:absolute;display:none}.grid-view .overlay img{position:absolute;left:50%;top:50%;margin-left:-50px;margin-top:-50px;display:block}.grid-view legend{margin-bottom:0}.grid-view .pagination .records-count{float:right;margin-right:7px}.grid-view .pagination .records-select{float:left;margin-left:7px}.grid-view .pagination .records-select label{display:inline}.grid-view .pagination .records-select select{margin:0}.grid-view .table th{white-space:nowrap}#grid-view .table th.align-center,.align-center,.grid-view .table td.align-center{text-align:center}.popover{width:auto}.popover-content{font-size:14px;line-height:20px;color:#333}

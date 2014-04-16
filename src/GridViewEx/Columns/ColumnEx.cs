@@ -106,6 +106,28 @@ namespace GridViewEx.Columns
                 OnFieldChanged();
             }
         }
+
+        /// <summary>
+        /// Stores the data field for the currency symbol
+        /// </summary>
+        public string DataFieldCurrencySymbol
+        {
+            get
+            {
+                object value = ViewState["DataFieldCurrencySymbol"];
+
+                if (value != null)
+                    return value.ToString();
+
+                return string.Empty;
+            }
+
+            set
+            {
+                ViewState["DataFieldCurrencySymbol"] = value;
+                OnFieldChanged();
+            }
+        }
         #endregion
 
         #region EVENTS
@@ -124,6 +146,9 @@ namespace GridViewEx.Columns
             return new BoundField();
         }
 
+        /// <summary>
+        /// Override the Initialize function
+        /// </summary>
         public override bool Initialize(bool sortingEnabled, Control control)
         {
             return base.Initialize(sortingEnabled, control);
@@ -187,17 +212,31 @@ namespace GridViewEx.Columns
                 divFilter.Attributes.Add("class", controlClientID + "Filters");
                 divFilter.Attributes.Add("style", "display: none;");
 
+                var inputPrependClass = ((GridViewEx)this.Control).BootstrapVersion >= 3
+                    ? "input-group input-group-sm"
+                    : "input-prepend";
+
                 var divInputPrepend = new HtmlGenericControl("div");
-                divInputPrepend.Attributes.Add("class", "input-prepend");
+                divInputPrepend.Attributes.Add("class", inputPrependClass);
 
                 var divBtnGroup = new HtmlGenericControl("div");
-                divBtnGroup.Attributes.Add("class", "btn-group");
+                divBtnGroup.Attributes.Add("class", ((GridViewEx)this.Control).BootstrapVersion >= 3
+                    ? "input-group-btn"
+                    : "btn-group");
+
+                var icon = ((GridViewEx)this.Control).BootstrapVersion >= 3
+                    ? "glyphicon glyphicon-filter"
+                    : "icon-filter";
+
+                var btnClass = ((GridViewEx)this.Control).BootstrapVersion >= 3
+                    ? "btn btn-default"
+                    : "btn";
 
                 var btnFilter = new HtmlButton();
-                btnFilter.Attributes.Add("class", "btn dropdown-toggle");
+                btnFilter.Attributes.Add("class", btnClass + " dropdown-toggle");
                 btnFilter.Attributes.Add("title", "Filter By");
                 btnFilter.Attributes.Add("data-toggle", "dropdown");
-                btnFilter.InnerHtml = "<i class=\"icon-filter\"></i>";
+                btnFilter.InnerHtml = "<i class=\"" + icon + "\"></i>";
                 divBtnGroup.Controls.Add(btnFilter);
 
                 var ulFilter = new HtmlGenericControl("ul");
@@ -208,7 +247,9 @@ namespace GridViewEx.Columns
                     ID = "txt" + controlClientIDDataField,
                     ClientIDMode = ClientIDMode.Static,
                     AutoPostBack = true,
-                    CssClass = "span1"
+                    CssClass = ((GridViewEx)this.Control).BootstrapVersion >= 3
+                        ? "form-control col-md-1"
+                        : "span1"
                 };
 
                 var hiddenField = new HiddenField
@@ -218,11 +259,11 @@ namespace GridViewEx.Columns
                 };
 
                 var liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '= ');\">Is equal to</a>";
+                liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '= ');\">Is equal to</a>";
                 ulFilter.Controls.Add(liFilter);
 
                 liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!= ');\">Is not equal to</a>";
+                liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!= ');\">Is not equal to</a>";
                 ulFilter.Controls.Add(liFilter);
 
                 // Check the data format to add the correct filter expressions
@@ -234,45 +275,45 @@ namespace GridViewEx.Columns
                     || DataFormat == DataFormatEnum.ShortDate)
                 {
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '> ');\">Is greater than</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '> ');\">Is greater than</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '>= ');\">Is greater than or equal to</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '>= ');\">Is greater than or equal to</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '< ');\">Is less than</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '< ');\">Is less than</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '<= ');\">Is less than or equal to</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '<= ');\">Is less than or equal to</a>";
                     ulFilter.Controls.Add(liFilter);
                 }
                 else
                 {
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '* ');\">Contains</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '* ');\">Contains</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!* ');\">Not contains</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!* ');\">Not contains</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '˄ ');\">Starts with</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '˄ ');\">Starts with</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '˅ ');\">Ends with</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '˅ ');\">Ends with</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!˄ ');\">Not starts with</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!˄ ');\">Not starts with</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!˅ ');\">Not ends with</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + txtBox.ClientID + "', '!˅ ');\">Not ends with</a>";
                     ulFilter.Controls.Add(liFilter);
                 }
 
@@ -283,15 +324,18 @@ namespace GridViewEx.Columns
                 divInputPrepend.Controls.Add(txtBox);
                 divInputPrepend.Controls.Add(hiddenField);
 
+
                 ((GridViewEx)this.Control).JSScript += (DataFormat == DataFormatEnum.Date || DataFormat == DataFormatEnum.ShortDate)
                     ? @"
                     function " + controlClientIDDataField + @"Function() {
                         $('#" + txtBox.ClientID + @"').datepicker().on('changeDate', function (ev) {
                             var date = new Date(ev.date);
-                            $('#" + hiddenField.ClientID + @"').val($('#" + hiddenField.ClientID + @"').val() + date.toLocaleDateString());
+                            if ($('#" + hiddenField.ClientID + @"').val().indexOf(date.format('" + ((GridViewEx)this.Control).CultureInfo.DateTimeFormat.FullDateTimePattern + @"')) === -1) {
+                                $('#" + hiddenField.ClientID + @"').val($('#" + hiddenField.ClientID + @"').val() + date.format('" + ((GridViewEx)this.Control).CultureInfo.DateTimeFormat.FullDateTimePattern + @"'));
 
-                            $('#" + txtBox.ClientID + @"').datepicker('hide');
-                            $('#" + txtBox.ClientID + @"').change();
+                                $('#" + txtBox.ClientID + @"').datepicker('hide');
+                                $('#" + txtBox.ClientID + @"').change();
+                            }
                         });
                     }"
                     : @"
@@ -330,17 +374,31 @@ namespace GridViewEx.Columns
                 divFilter.Attributes.Add("class", controlClientID + "Filters");
                 divFilter.Attributes.Add("style", "display: none;");
 
+                var inputPrependClass = ((GridViewEx)this.Control).BootstrapVersion >= 3
+                    ? "input-group input-group-sm"
+                    : "input-prepend";
+
                 var divInputPrepend = new HtmlGenericControl("div");
-                divInputPrepend.Attributes.Add("class", "input-prepend");
+                divInputPrepend.Attributes.Add("class", inputPrependClass);
 
                 var divBtnGroup = new HtmlGenericControl("div");
-                divBtnGroup.Attributes.Add("class", "btn-group");
+                divBtnGroup.Attributes.Add("class", ((GridViewEx)this.Control).BootstrapVersion >= 3
+                    ? "input-group-btn"
+                    : "btn-group");
+
+                var icon = ((GridViewEx)this.Control).BootstrapVersion >= 3
+                    ? "glyphicon glyphicon-filter"
+                    : "icon-filter";
+
+                var btnClass = ((GridViewEx)this.Control).BootstrapVersion >= 3
+                    ? "btn btn-default"
+                    : "btn";
 
                 var btnFilter = new HtmlButton();
-                btnFilter.Attributes.Add("class", "btn dropdown-toggle");
+                btnFilter.Attributes.Add("class", btnClass + " dropdown-toggle");
                 btnFilter.Attributes.Add("title", "Filter By");
                 btnFilter.Attributes.Add("data-toggle", "dropdown");
-                btnFilter.InnerHtml = "<i class=\"icon-filter\"></i>";
+                btnFilter.InnerHtml = "<i class=\"" + icon + "\"></i>";
                 divBtnGroup.Controls.Add(btnFilter);
 
                 var ulFilter = new HtmlGenericControl("ul");
@@ -351,7 +409,9 @@ namespace GridViewEx.Columns
                     ID = "ddl" + controlClientID + DataField,
                     ClientIDMode = ClientIDMode.Static,
                     AutoPostBack = true,
-                    CssClass = "span1"
+                    CssClass = ((GridViewEx)this.Control).BootstrapVersion >= 3
+                        ? "form-control col-md-1"
+                        : "span1"
                 };
                 ddlDropDownList.SelectedIndexChanged += new EventHandler(ddlDropDownList_SelectedIndexChanged);
 
@@ -365,11 +425,11 @@ namespace GridViewEx.Columns
                 };
 
                 var liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '= ');\">Is equal to</a>";
+                liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '= ');\">Is equal to</a>";
                 ulFilter.Controls.Add(liFilter);
 
                 liFilter = new HtmlGenericControl("li");
-                liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '!= ');\">Is not equal to</a>";
+                liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '!= ');\">Is not equal to</a>";
                 ulFilter.Controls.Add(liFilter);
 
                 // Check the data format to add the correct filter expressions
@@ -381,19 +441,19 @@ namespace GridViewEx.Columns
                     || DataFormat == DataFormatEnum.ShortDate)
                 {
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '> ');\">Is greater than</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '> ');\">Is greater than</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '>= ');\">Is greater than or equal to</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '>= ');\">Is greater than or equal to</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '< ');\">Is less than</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '< ');\">Is less than</a>";
                     ulFilter.Controls.Add(liFilter);
 
                     liFilter = new HtmlGenericControl("li");
-                    liFilter.InnerHtml = "<a href=\"#\" onclick=\"" + controlClientID + "SaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '<= ');\">Is less than or equal to</a>";
+                    liFilter.InnerHtml = "<a href=\"javascript:GVEXSaveSearchExp('" + hiddenField.ClientID + "', '" + ddlDropDownList.ClientID + "', '<= ');\">Is less than or equal to</a>";
                     ulFilter.Controls.Add(liFilter);
                 }
 
@@ -437,10 +497,14 @@ namespace GridViewEx.Columns
             {
                 var dataItem = DataBinder.GetDataItem(cell.NamingContainer);
                 var dataValue = DataBinder.GetPropertyValue(dataItem, DataField);
+                var culture = (CultureInfo)((GridViewEx)this.Control).CultureInfo.Clone();
 
                 string tooltip = String.Empty;
                 if (!String.IsNullOrEmpty(DataFieldToolTip))
                     tooltip = DataBinder.GetPropertyValue(dataItem, DataFieldToolTip).ToString();
+
+                if (!String.IsNullOrEmpty(DataFieldCurrencySymbol))
+                    culture.NumberFormat.CurrencySymbol = DataBinder.GetPropertyValue(dataItem, DataFieldCurrencySymbol).ToString();
 
                 string value = dataValue != null ? dataValue.ToString() : "";
                 if (!String.IsNullOrWhiteSpace(value))
@@ -450,7 +514,7 @@ namespace GridViewEx.Columns
                             Decimal pValue;
                             if (Decimal.TryParse(value, out pValue))
                             {
-                                var pText = pValue % 1 == 0 ? String.Format(CultureInfo.InvariantCulture, "{0:0%}", pValue) : String.Format(CultureInfo.InvariantCulture, "{0:0.00%}", pValue);
+                                var pText = pValue % 1 == 0 ? String.Format(culture, "{0:0%}", pValue) : String.Format(culture, "{0:0.00%}", pValue);
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
                                     if (!String.IsNullOrWhiteSpace(tooltip))
@@ -481,7 +545,7 @@ namespace GridViewEx.Columns
                             Decimal cValue;
                             if (Decimal.TryParse(value, out cValue))
                             {
-                                var cText = cValue % 1 == 0 ? String.Format(new CultureInfo("en-US"), "{0:C0}", cValue) : String.Format(new CultureInfo("en-US"), "{0:C}", cValue);
+                                var cText = cValue % 1 == 0 ? String.Format(culture, "{0:C0}", cValue) : String.Format(culture, "{0:C}", cValue);
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
                                     if (!String.IsNullOrWhiteSpace(tooltip))
@@ -574,7 +638,7 @@ namespace GridViewEx.Columns
                             Decimal hValue;
                             if (Decimal.TryParse(value, out hValue))
                             {
-                                var hText = hValue % 1 == 0 ? String.Format(CultureInfo.InvariantCulture, "{0:0 H}", hValue) : String.Format(CultureInfo.InvariantCulture, "{0:0.00 H}", hValue);
+                                var hText = hValue % 1 == 0 ? String.Format(culture, "{0:0 H}", hValue) : String.Format(culture, "{0:0.00 H}", hValue);
 
                                 if (!String.IsNullOrWhiteSpace(NavigateUrl))
                                     if (!String.IsNullOrWhiteSpace(tooltip))
@@ -660,7 +724,7 @@ namespace GridViewEx.Columns
             {
                 var hiddenField = txt.NamingContainer.FindControl("hf" + this.Control.ClientID + DataField) as HiddenField;
                 if (hiddenField != null)
-                    ApplyFilter(hiddenField.Value);
+                    ApplyFilter(hiddenField.Value); // TODO: For currency should include the symbol somewhere
             }
         }
 
@@ -676,7 +740,7 @@ namespace GridViewEx.Columns
             {
                 var hiddenField = ddl.NamingContainer.FindControl("hf" + this.Control.ClientID + DataField) as HiddenField;
                 if (hiddenField != null)
-                    ApplyFilter(hiddenField.Value);
+                    ApplyFilter(hiddenField.Value); // TODO: For currency should include the symbol somewhere
             }
         }
 
@@ -736,7 +800,7 @@ namespace GridViewEx.Columns
                     break;
                 case DataFormatEnum.Currency:
                     Decimal cValue;
-                    if (Decimal.TryParse(filterText, NumberStyles.Currency, CultureInfo.InvariantCulture, out cValue))
+                    if (Decimal.TryParse(filterText, NumberStyles.Currency, ((GridViewEx)this.Control).CultureInfo, out cValue))
                         filterText = cValue.ToString();
                     break;
                 case DataFormatEnum.Date:

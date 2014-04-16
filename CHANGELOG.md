@@ -1,3 +1,15 @@
+## v2.0.0 (April 16, 2014)
+- **Moved JS & CSS to external files**. You'll need to include them on your website.
+- **Handle different cultures**. If not defined, it takes the default for the thread.
+- **Allow different currency symbols**. Add it to the Source and call it on 'DataFieldCurrencySymbol'.
+- **Support Bootstrap V3**. Add 'BootstrapVersion=3' on the GridViewEX table definition.
+- The column manager handle now column type 'TemplateField'.
+- Popover for coulumn, filter & sorting management now works on click.
+- Links with href=# now are buttons.
+- 'ItemStyle-CssClass' on checkbox now apply for the filter too.
+- Change string concat on JS to StringBuilder.
+- Bug fixes.
+
 ## v1.3.1 (October 16, 2013)
 - Column management cookie size reduced by 13% more.
 - Improved speed by not creating the controls if the column is not visible.

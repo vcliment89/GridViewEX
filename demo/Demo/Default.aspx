@@ -11,11 +11,14 @@
     <link rel="stylesheet" href="~/Content/bootstrap-responsive.css" type="text/css" />
     <link rel="stylesheet" href="~/Content/datepicker.css" type="text/css" />
     <link rel="stylesheet" href="~/Content/themes/base/minified/jquery-ui.min.css" type="text/css" />
+    <link rel="stylesheet" href="~/Content/gridviewex2.css" type="text/css" />
     <link rel="stylesheet" href="~/Content/style.css" type="text/css" />
     <script src='<%= Page.ResolveClientUrl("~/Scripts/jquery-1.8.3.js")%>' type="text/javascript"></script>
     <script src='<%= Page.ResolveClientUrl("~/Scripts/jquery-ui-1.9.2.js")%>' type="text/javascript"></script>
     <script src='<%= Page.ResolveClientUrl("~/Scripts/bootstrap.js")%>' type="text/javascript"></script>
     <script src='<%= Page.ResolveClientUrl("~/Scripts/bootstrap-datepicker.js")%>' type="text/javascript"></script>
+    <script src='<%= Page.ResolveClientUrl("~/Scripts/date.format.js")%>' type="text/javascript"></script>
+    <script src='<%= Page.ResolveClientUrl("~/Scripts/gridviewex.js")%>' type="text/javascript"></script>
     <script src='<%= Page.ResolveClientUrl("~/Scripts/common.js")%>' type="text/javascript"></script>
 </head>
 <body>

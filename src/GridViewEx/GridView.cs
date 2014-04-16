@@ -1,8 +1,12 @@
 ﻿using GridViewEx.Columns;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.UI;
@@ -57,6 +61,11 @@ namespace GridViewEx
         internal string JSScriptDocumentReadyDelayed { get; set; }
 
         /// <summary>
+        /// Stores the alert message CSS class, so it ca change for errors, warnings...
+        /// </summary>
+        internal string AlertMessageClass { get; set; }
+
+        /// <summary>
         /// Used to title the table
         /// </summary>
         /// <remarks> 
@@ -106,6 +115,14 @@ namespace GridViewEx
         public string PagerSelectorOptions { get; set; }
 
         /// <summary>
+        /// Set the version of bootstrap used
+        /// </summary>
+        /// <example>  
+        /// 2.3
+        /// </example>
+        public double? BootstrapVersion { get; set; }
+
+        /// <summary>
         /// Set the default Sort Expressions of the table
         /// </summary>
         /// <example>  
@@ -120,6 +137,11 @@ namespace GridViewEx
         /// </code> 
         /// </example> 
         public List<SortExpression> SortExpressions { get; set; }
+
+        /// <summary>
+        /// Set the culture info used by the table. Default set to CultureInfo.InvariantCulture
+        /// </summary>
+        public CultureInfo CultureInfo { get; set; }
         #endregion
 
         #region EVENTS
@@ -176,10 +198,20 @@ namespace GridViewEx
             AutoGenerateColumns = false;
             ShowHeaderWhenEmpty = true;
 
+            // Set a default culture
+            if (CultureInfo == null)
+                CultureInfo = Thread.CurrentThread.CurrentCulture;
+
             if (String.IsNullOrWhiteSpace(EmptyDataText))
                 EmptyDataText = "No data to display";
             if (String.IsNullOrWhiteSpace(PagerSelectorOptions))
                 PagerSelectorOptions = "10,50,100,All";
+
+            if (!String.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["BootstrapVersion"]))
+                BootstrapVersion = Convert.ToDouble(ConfigurationManager.AppSettings["BootstrapVersion"]);
+
+            if (!BootstrapVersion.HasValue)
+                BootstrapVersion = 2.3;
         }
 
         /// <summary>
@@ -257,12 +289,18 @@ namespace GridViewEx
                                 var sortImage = new Literal();
                                 if (sortExpression.Direction == SortDirection.Ascending.ToSQLString())
                                 {
-                                    button.Text += " <i class=\"icon-arrow-up\"></i>";
+                                    var icon = BootstrapVersion >= 3
+                                        ? "glyphicon glyphicon-arrow-up"
+                                        : "icon-arrow-up";
+                                    button.Text += " <i class=\"" + icon + "\"></i>";
                                     button.ToolTip += " - ASC Order";
                                 }
                                 else
                                 {
-                                    button.Text += " <i class=\"icon-arrow-down\"></i>";
+                                    var icon = BootstrapVersion >= 3
+                                        ? "glyphicon glyphicon-arrow-down"
+                                        : "icon-arrow-down";
+                                    button.Text += " <i class=\"" + icon + "\"></i>";
                                     button.ToolTip += " - DESC Order";
                                 }
 
@@ -334,27 +372,41 @@ namespace GridViewEx
         /// </summary>
         protected override void Render(HtmlTextWriter writer)
         {
-            var hlCompactTable = new HyperLink
-            {
-                ID = "hl" + ClientID + "CompactTable",
-                NavigateUrl = "#",
-                CssClass = "btn pull-right",
-                ToolTip = "Compact Table",
-                Text = "<i class=\"icon-resize-small\"></i>"
-            };
-            hlCompactTable.Attributes.Add("onclick", ClientID + "CompactTable(true);");
-            hlCompactTable.Attributes.Add("style", "margin-right: 10px;");
+            var icon = BootstrapVersion >= 3
+                ? "glyphicon glyphicon-resize-small"
+                : "icon-resize-small";
 
-            var hlExpandTable = new HyperLink
+            var btnClass = BootstrapVersion >= 3
+                ? "btn btn-default btn-sm"
+                : "btn";
+
+            var btnCompactTable = new HtmlButton
             {
-                ID = "hl" + ClientID + "ExpandTable",
-                NavigateUrl = "#",
-                CssClass = "btn hide pull-right",
-                ToolTip = "Expand Table",
-                Text = "<i class=\"icon-resize-full\"></i>"
+                ID = "btn" + ClientID + "CompactTable",
+                InnerHtml = "<i class=\"" + icon + "\"></i>"
             };
-            hlExpandTable.Attributes.Add("onclick", ClientID + "CompactTable(false);");
-            hlExpandTable.Attributes.Add("style", "margin-right: 10px;");
+
+            icon = BootstrapVersion >= 3
+               ? "glyphicon glyphicon-resize-full"
+               : "icon-resize-full";
+
+            var btnExpandTable = new HtmlButton
+            {
+                ID = "btn" + ClientID + "ExpandTable",
+                InnerHtml = "<i class=\"" + icon + "\"></i>"
+            };
+
+            btnCompactTable.Attributes.Add("type", "button");
+            btnCompactTable.Attributes.Add("onclick", "GVEXCompactTable('" + ClientID + "', true, '" + btnExpandTable.ClientID + "', '" + btnCompactTable.ClientID + "');");
+            btnCompactTable.Attributes.Add("title", "Compact Table");
+            btnCompactTable.Attributes.Add("class", btnClass + " pull-right");
+            btnCompactTable.Attributes.Add("style", "margin-right: 10px;");
+            
+            btnExpandTable.Attributes.Add("type", "button");
+            btnExpandTable.Attributes.Add("onclick", "GVEXCompactTable('" + ClientID + "', false, '" + btnExpandTable.ClientID + "', '" + btnCompactTable.ClientID + "');");
+            btnExpandTable.Attributes.Add("title", "Expand Table");
+            btnExpandTable.Attributes.Add("class", btnClass + " hide pull-right");
+            btnExpandTable.Attributes.Add("style", "margin-right: 10px;");
 
             // Render the table wrap and the overlay which is shown on the AJAX calls
             writer.Write("<div id=\"" + ClientID + "grid-view\" class=\"grid-view\"><div class=\"overlay\">");
@@ -369,18 +421,22 @@ namespace GridViewEx
             // Render the close tag for overlay and the title
             writer.Write("</div><!-- .overlay --><fieldset><legend>" + Title);
 
+            icon = BootstrapVersion >= 3
+               ? "glyphicon glyphicon-search"
+               : "icon-search";
+
             // Render filter icon. Disable the filter function if no records and no filters applied
             if (Rows.Count == 0
                 && Context.Session[ID + "_Filters"] == null)
-                writer.Write("<a class=\"btn pull-right disabled\" title=\"Filter\"><i class=\"icon-search\"></i></a>");
+                writer.Write("<button id=\"" + ClientID + "btnFilter\" type=\"button\" class=\"" + btnClass + " pull-right disabled\" title=\"Filter\"><i class=\"" + icon + "\"></i></button>");
             else
-                writer.Write("<a href=\"#\" class=\"btn pull-right\" title=\"Filter\" onclick=\"" + ClientID + "ToggleInlineFilter();\"><i class=\"icon-search\"></i></a>");
+                writer.Write("<button id=\"" + ClientID + "btnFilter\" type=\"button\" class=\"" + btnClass + " pull-right\" title=\"Filter\" onclick=\"GVEXToggleInlineFilter('" + ClientID + "', this);\"><i class=\"" + icon + "\"></i></button>");
 
             // Render compact/expand icons
             if (IsCompactShown)
             {
-                hlCompactTable.RenderControl(writer);
-                hlExpandTable.RenderControl(writer);
+                btnCompactTable.RenderControl(writer);
+                btnExpandTable.RenderControl(writer);
             }
 
             if (base.Controls.Count == 7)
@@ -410,10 +466,10 @@ namespace GridViewEx
                 writer.Write("</legend></fieldset><div id=\"" + ClientID + "GridViewTable\" class=\"grid-view-table\">");
 
                 // Render message alerts
-                var cookie = Page.Request.Cookies[ID + "_AlertMessage"];
+                var cookie = Page.Request.Cookies[ClientID + "_AlertMessage"];
                 if (cookie != null)
                 {
-                    writer.Write("<div id=\"" + ClientID + "AlertMessage\" class=\"alert alert-success fade in\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\">×</button>");
+                    writer.Write("<div id=\"" + ClientID + "AlertMessage\" class=\"alert " + (String.IsNullOrWhiteSpace(AlertMessageClass) ? "alert-success" : AlertMessageClass) + " fade in\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\">×</button>");
                     writer.Write(HttpUtility.UrlDecode(cookie.Value));
                     writer.Write("</div>");
                 }
@@ -437,351 +493,60 @@ namespace GridViewEx
             }
 
             writer.Write("</div><!-- .grid-view -->");
-            var jsScript = @"<script type='text/javascript'>
-                var " + ClientID + @"SizeCompact = " + IsCompact.ToString().ToLower() + @";
-                var " + ClientID + @"IsFilterShown = " + IsFilterShown.ToString().ToLower() + @";
 
-                Sys.WebForms.PageRequestManager.getInstance().add_beginRequest(" + ClientID + @"BeginRequestHandler);
-                Sys.WebForms.PageRequestManager.getInstance().add_endRequest(" + ClientID + @"EndRequestHandler);
+            var jsScript = new StringBuilder();
+            jsScript.AppendLine("<script type='text/javascript'>");
+            jsScript.AppendLine("var " + ClientID + "SizeCompact = " + IsCompact.ToString().ToLower() + ";");
+            jsScript.AppendLine("var " + ClientID + "IsFilterShown = " + IsFilterShown.ToString().ToLower() + ";");
+            jsScript.AppendLine("Sys.WebForms.PageRequestManager.getInstance().add_beginRequest(" + ClientID + "BeginRequestHandler);");
+            jsScript.AppendLine("Sys.WebForms.PageRequestManager.getInstance().add_endRequest(" + ClientID + "EndRequestHandler);");
+            jsScript.AppendLine(JSScript);
+            jsScript.AppendLine("function " + ClientID + "BeginRequestHandler(sender, args) {");
+            jsScript.AppendLine("$('#" + ClientID + "grid-view .overlay')");
+            jsScript.AppendLine(".width($('#" + ClientID + @"grid-view').width())");
+            jsScript.AppendLine(".height($('#" + ClientID + @"grid-view').height())");
+            jsScript.AppendLine(".show();");
+            jsScript.AppendLine(JSScriptBeginRequestHandler);
+            jsScript.AppendLine(JSScriptBeginRequestHandlerDelayed);
+            jsScript.AppendLine("}");
+            jsScript.AppendLine("function " + ClientID + "EndRequestHandler(sender, args) {");
+            jsScript.AppendLine("$('#" + ClientID + "grid-view .overlay').hide();");
+            jsScript.AppendLine("if (" + ClientID + "SizeCompact)");
+            jsScript.AppendLine("GVEXCompactTable('" + ClientID + "', true, '" + btnExpandTable.ClientID + "', '" + btnCompactTable.ClientID + "');");
+            jsScript.AppendLine("if (" + ClientID + "IsFilterShown)");
+            jsScript.AppendLine("GVEXToggleInlineFilter('" + ClientID + "', $('#" + ClientID + "btnFilter')[0], true);");
+            jsScript.AppendLine("GVEXDeleteAlert('" + ClientID + "');");
+            jsScript.AppendLine(JSScriptEndRequestHandler);
+            jsScript.AppendLine(JSScriptEndRequestHandlerDelayed);
+            jsScript.AppendLine("}");
+            jsScript.AppendLine("$(document).ready(function () {");
+            jsScript.AppendLine("if (" + ClientID + "SizeCompact)");
+            jsScript.AppendLine("GVEXCompactTable('" + ClientID + "', true, '" + btnExpandTable.ClientID + "', '" + btnCompactTable.ClientID + "');");
+            jsScript.AppendLine("if (" + ClientID + "IsFilterShown)");
+            jsScript.AppendLine("GVEXToggleInlineFilter('" + ClientID + "', $('#" + ClientID + "btnFilter')[0], true);");
+            jsScript.AppendLine("$('body').on('click', function (e) {");
+            jsScript.AppendLine("$('[data-toggle=\\'popover\\']').each(function () {");
+            jsScript.AppendLine("if (!$(this).is(e.target) && $(this).has(e.target).length === 0 && $('.popover').has(e.target).length === 0)");
+            jsScript.AppendLine("$(this).popover('hide');");
+            jsScript.AppendLine("});");
+            jsScript.AppendLine("});");
+            jsScript.AppendLine("var cookies = document.cookie.split(';');");
+            jsScript.AppendLine("for (var i = 0; i < cookies.length; i++) {");
+            jsScript.AppendLine("var equals = cookies[i].indexOf('=');");
+            jsScript.AppendLine("var name = equals > -1");
+            jsScript.AppendLine("? cookies[i].substr(0, equals)");
+            jsScript.AppendLine(": cookies[i];");
+            jsScript.AppendLine("if (name.indexOf('_ColumnsSelected') != -1)");
+            jsScript.AppendLine("document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT';");
+            jsScript.AppendLine("}");
+            jsScript.AppendLine("GVEXDeleteAlert('" + ClientID + "');");
+            jsScript.AppendLine("GVEXCreateTopScrollbar('" + ClientID + "');");
+            jsScript.AppendLine(JSScriptDocumentReady);
+            jsScript.AppendLine(JSScriptDocumentReadyDelayed);
+            jsScript.AppendLine("});");
+            jsScript.AppendLine("</script>");
 
-                function " + ClientID + @"ToggleInlineFilter(isVisible) {
-                    if (typeof isVisible != 'undefined') {
-                        " + ClientID + @"IsFilterShown = isVisible;
-                        if (isVisible) {
-                            $('." + ClientID + @"Filters').show();
-                        }
-                        else {
-                            $('." + ClientID + @"Filters').hide();
-                        }
-                    }
-                    else {
-                        " + ClientID + @"IsFilterShown = !" + ClientID + @"IsFilterShown;
-                        $('." + ClientID + @"Filters').toggle();
-                    }
-                    $('#" + ClientID + @"Scrollbar')
-                        .children('div')
-                        .width($('#" + ClientID + @"GridViewTable')
-                            .children('div')
-                            .children('table')[0]
-                            .scrollWidth);
-                }";
-
-            if (IsCompactShown
-                || IsCompact)
-                jsScript += @"
-                    function " + ClientID + @"CompactTable(isCompact) {
-                        " + ClientID + @"SizeCompact = isCompact;
-                        if (isCompact) {
-                            $('#" + ClientID + @"').addClass('table-condensed');
-                            $('#" + hlExpandTable.ClientID + @"').show();
-                            $('#" + hlCompactTable.ClientID + @"').hide();
-                        }
-                        else {
-                            $('#" + ClientID + @"').removeClass('table-condensed');
-                            $('#" + hlExpandTable.ClientID + @"').hide();
-                            $('#" + hlCompactTable.ClientID + @"').show();
-                        }
-                        $('#" + ClientID + @"Scrollbar')
-                            .children('div')
-                            .width($('#" + ClientID + @"GridViewTable')
-                                .children('div')
-                                .children('table')[0]
-                                .scrollWidth);
-                    }";
-
-            jsScript += @"
-                function " + ClientID + @"CreateTopScrollbar() {
-                    var element = $('#" + ClientID + @"GridViewTable');
-                    var scrollbar = $('<div></div>')
-                        .attr('id','" + ClientID + @"Scrollbar')
-                        .css('overflow-x', 'auto')
-                        .css('overflow-y', 'hidden')
-                        .append($('<div></div>')
-                            .width(element
-                                .children('div')
-                                .children('table')[0]
-                                .scrollWidth)
-                            .css('padding-top', '1px')
-                            .append('\xA0'));
-                    scrollbar.scroll(function() {
-                        element.scrollLeft(scrollbar.scrollLeft());
-                    });
-                    element.scroll(function() {
-                        scrollbar.scrollLeft(element.scrollLeft());
-                    });
-                    element.before(scrollbar);
-                }
-
-                function " + ClientID + @"Popover(hoverElementID, divElementID) {
-                    $(hoverElementID).popover({
-                        html: true,
-                        trigger: 'manual',
-                        placement: 'bottom',
-                        content: function () {
-                            return $(divElementID).html();
-                        }
-                    });
-
-                    var timer, popover_parent;
-
-                    $(hoverElementID).hover(function () {
-                        clearTimeout(timer);
-                        $('.popover').hide(); //Hide any open popovers on other elements.
-                        popover_parent = this
-                        $(this).popover('show');
-                    },
-                        function () {
-                            timer = setTimeout(function () { $(this).popover('hide'); }, 300);
-                        });
-                    
-                    $('#" + ClientID + @"grid-view fieldset').on('mouseover', '.popover', function () {
-                        clearTimeout(timer);
-                    });
-                    
-                    $('#" + ClientID + @"grid-view fieldset').on('mouseleave', '.popover', function () {
-                        timer = setTimeout(function () { $(popover_parent).popover('hide'); }, 300);
-                    });
-                }
-
-                function " + ClientID + @"SaveSearchExp(hfID, focusID, value) {
-                    $('#' + hfID).val(value);
-                    $('#' + focusID).focus();
-                }
-                
-                function " + ClientID + @"DeleteAlert() {
-                    var d = new Date();
-                    document.cookie = '" + ID + @"_AlertMessage=; expires=' + d.toUTCString() + '; path=';
-                }";
-
-            if (ViewChanged != null)
-                jsScript += @"
-                    function " + ClientID + @"SaveView(modalID, txtViewNameID, divViewCheckBoxesID, divAlertID) {
-                        var isViewValid = true;
-                        var viewCheckBoxes = $(divViewCheckBoxesID).find('input[type=\'checkbox\']');
-                    
-                        isViewValid = ($(txtViewNameID).val().length > 0);
-
-                        var count = 0;
-                        $.map(viewCheckBoxes, function (elementOfArray, indexInArray) {
-                            if($(elementOfArray).is(':checked'))
-                                count++;
-                        });
-
-                        if (viewCheckBoxes.length >= 1
-                            && count <= 0)
-                            isViewValid = false;
-
-                        if (isViewValid) {
-                            var d = new Date();
-                            var d2 = new Date(d.getTime() + 5 * 60000); // 5 minutes
-                            document.cookie = '" + ID + @"_AlertMessage=' + escape('View Saved!') + '; expires=' + d2.toUTCString() + '; path=';
-
-                            $(modalID).modal('hide');
-                            return true;
-                        }
-                        else {
-                            if ($(txtViewNameID).val().length <= 0) {
-                                if ($(divAlertID).length <= 0)
-                                    $(txtViewNameID).parent().parent().next().children('div:first-child').append('<div id=\'' + divAlertID.substring(1, divAlertID.length) + '\' class=\'alert alert-error fade in\' style=\'font-size: 14px;line-height: 20px;\'><button class=\'close\' data-dismiss=\'alert\'>x</button><div>Must provide a name</div></div>');
-                                else {
-                                    $(divAlertID).children('div').html('Must provide a name');
-                                    $(divAlertID).show();
-                                }
-
-                                $(txtViewNameID).css('border-color','#B94A48')
-                                    .css('color','#B94A48')
-                                    .focus();
-                            }
-                            else if (viewCheckBoxes.length >= 1
-                                && count <= 0) {
-                                if ($(divAlertID).length <= 0)
-                                    $(txtViewNameID).parent().parent().next().children('div:first-child').append('<div id=\'' + divAlertID.substring(1, divAlertID.length) + '\' class=\'alert alert-error fade in\' style=\'font-size: 14px;line-height: 20px;\'><button class=\'close\' data-dismiss=\'alert\'>x</button><div>Must select at least one option</div></div>');
-                                else {
-                                    $(divAlertID).children('div').html('Must select at least one option');
-                                    $(divAlertID).show();
-                                }
-
-                                $.map(viewCheckBoxes, function (elementOfArray, indexInArray) {
-                                    $(elementOfArray).parent().css('color','#B94A48');
-                                });
-                            }
-                        
-                            return false;
-                        }
-                    }";
-
-            if (ColumnSelectionChanged != null)
-                jsScript += @"
-                    function " + ClientID + @"ColumnSelectionShowAll(link, isShowAll, hfColumnsSelectedID, lbApplyID) {
-                        var arr = JSON.parse($(hfColumnsSelectedID).val());
-                    
-                        $(link).parent().children('ol').children().each(function () {
-                            $(this).children('input:checkbox').prop('checked', isShowAll);
-                        });
-
-                        $.map(arr, function (elementOfArray, indexInArray) {
-                            elementOfArray.V = Number(isShowAll);
-                        });
-
-                        $(hfColumnsSelectedID).val(JSON.stringify(arr));
-                        document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
-                        $(lbApplyID).show();
-                    }
-
-                    function " + ClientID + @"ColumnSelectionChanged(cb, hfColumnsSelectedID, lbApplyID) {
-                        var arr = JSON.parse($(hfColumnsSelectedID).val());
-
-                        $.map(arr, function (elementOfArray, indexInArray) {
-                            if (elementOfArray.ID == $(cb).attr('data-field')) {
-                                elementOfArray.V = Number($(cb).is(':checked'));
-                            }
-                        });
-                        
-                        $(hfColumnsSelectedID).val(JSON.stringify(arr));
-                        document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
-                        $(lbApplyID).show();
-                    }
-
-                    function " + ClientID + @"ColumnIndexChanged(link, index, hfColumnsSelectedID, lbApplyID) {
-                        var arr = JSON.parse($(hfColumnsSelectedID).val());
-                        var li = $(link).parent();
-                        var liPrev = li.prev();
-                        var liNext = li.next();
-                        var liChildren = li.children();
-                        var oldIndex = parseInt(liChildren.closest('input:checkbox').attr('data-index'));
-
-                        arr.move(oldIndex, index);
-                        $.map(arr, function (elementOfArray, indexInArray) {
-                            elementOfArray.I = indexInArray;
-                        });
-                    
-                        // Move the item on the list & handle the sort actions depending on the position
-                        if (index == 0) { // Second moved up to first place
-                            li.insertBefore(liPrev);
-                            liPrev.children().closest('input:checkbox').attr('data-index', index + 1);
-                        
-                            liChildren.closest('[data-action=""up""]').css('visibility', 'hidden');
-                            liPrev.children().closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
-                        }
-                        else if (index == 1
-                            && index > oldIndex) { // First moved down to second place
-                            li.insertAfter(liNext);
-                            liNext.children().closest('input:checkbox').attr('data-index', index - 1);
-                        
-                            liNext.children().closest('[data-action=""up""]').css('visibility', 'hidden');
-                            liChildren.closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
-                        }
-                        else if (index == li.parent().children().length - 2
-                            && oldIndex > index) { // Last moved up to penultimate place
-                            li.insertBefore(liPrev);
-                            liPrev.children().closest('input:checkbox').attr('data-index', index + 1);
-                        
-                            liPrev.children().closest('[data-action=""down""]').css('visibility', 'hidden');
-                            liChildren.closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
-                        }
-                        else if (index == li.parent().children().length - 1) { // Penultimate moved down to last place
-                            li.insertAfter(liNext);
-                            liNext.children().closest('input:checkbox').attr('data-index', index - 1);
-                        
-                            liChildren.closest('[data-action=""down""]').css('visibility', 'hidden');
-                            liNext.children().closest('[data-action=""up""], [data-action=""down""]').css('visibility', 'visible');
-                        }
-                        else {
-                            if (oldIndex < index) { // Moved Down
-                                li.insertAfter(liNext);
-                                liNext.children().closest('input:checkbox').attr('data-index', index - 1);
-                            }
-                            else { // Moved Up
-                                li.insertBefore(liPrev);
-                                liPrev.children().closest('input:checkbox').attr('data-index', index + 1);
-                            }
-                        }
-                        liChildren.closest('input:checkbox').attr('data-index', index);
-
-                        $(hfColumnsSelectedID).val(JSON.stringify(arr));
-                        document.cookie = '" + ID + @"_ColumnsSelected' + '=' + escape(JSON.stringify(arr)) + '; ';
-                        $(lbApplyID).show();
-                    }";
-
-            jsScript += @"
-                function " + ClientID + @"CheckboxIndeterminate(cbID) {
-                    var cb = document.getElementById(cbID);
-                    if (cb != null)
-                        cb.indeterminate = true;
-                }
-                
-                function " + ClientID + @"ColumnCheckboxesDisable(columnName, mode) {
-                    $('.' + columnName).each(function (index) {
-                        if (mode == 'checked'
-                            && $(this).is(':checked'))
-                            $(this).attr('disabled', 'disabled');
-                        else if (mode == 'unchecked'
-                            && $(this).is(':not(:checked)')
-                            && !$(this)[0].indeterminate)
-                            $(this).attr('disabled', 'disabled');
-                        else if (mode == 'null'
-                            && $(this)[0].indeterminate)
-                            $(this).attr('disabled', 'disabled');
-                        else if (mode == 'checkedOrNull'
-                            && ($(this).is(':checked')
-                                || $(this)[0].indeterminate))
-                            $(this).attr('disabled', 'disabled');
-                        else if (mode == 'all')
-                            $(this).attr('disabled', 'disabled');
-                    });
-                }
-                " + JSScript + @"
-
-                function " + ClientID + @"BeginRequestHandler(sender, args) {
-                    $('#" + ClientID + @"grid-view .overlay')
-                        .width($('#" + ClientID + @"grid-view').width())
-                        .height($('#" + ClientID + @"grid-view').height())
-                        .show();
-                    " + JSScriptBeginRequestHandler + @"
-                    " + JSScriptBeginRequestHandlerDelayed + @"
-                }
-
-                function " + ClientID + @"EndRequestHandler(sender, args) {
-                    $('#" + ClientID + @"grid-view .overlay').hide();
-
-                    if (" + ClientID + @"SizeCompact)
-                        " + ClientID + @"CompactTable(true);
-
-                    if (" + ClientID + @"IsFilterShown)
-                        " + ClientID + @"ToggleInlineFilter(true);
-
-                    " + ClientID + @"DeleteAlert();
-
-                    " + JSScriptEndRequestHandler + @"
-                    " + JSScriptEndRequestHandlerDelayed + @"
-                }
-
-                $(document).ready(function () {
-                    if (" + ClientID + @"SizeCompact)
-                        " + ClientID + @"CompactTable(true);
-
-                    if (" + ClientID + @"IsFilterShown)
-                        " + ClientID + @"ToggleInlineFilter(true);
-
-                    var cookies = document.cookie.split(';');
-                    for (var i = 0; i < cookies.length; i++) {
-                        var equals = cookies[i].indexOf('=');
-                        var name = equals > -1
-                            ? cookies[i].substr(0, equals)
-                            : cookies[i];
-                        if (name.indexOf('_ColumnsSelected') != -1)
-                            document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
-                    }
-                        
-                    " + ClientID + @"DeleteAlert();
-
-                    " + ClientID + @"CreateTopScrollbar();
-                    " + JSScriptDocumentReady + @"
-                    " + JSScriptDocumentReadyDelayed + @"
-                });
-            </script>";
-
-            ScriptManager.RegisterStartupScript(this, this.GetType(), ClientID + "JSScript", jsScript, false); 
+            ScriptManager.RegisterStartupScript(this, this.GetType(), ClientID + "JSScript", jsScript.ToString(), false);
         }
         #endregion
 
@@ -875,12 +640,14 @@ namespace GridViewEx
                 {
                     var columns = new List<ColumnExpression>();
                     var index = 0;
+                    var displayIndex = 0;
                     foreach (var column in Columns)
                     {
                         var gridViewExColumn = column as ColumnEx;
                         var gridViewExCheckBox = column as CheckBoxEx;
                         var boundColumn = column as BoundField;
                         var checkboxColumn = column as CheckBoxField;
+                        var templateFieldColumn = column as TemplateField;
 
                         if (gridViewExColumn != null)
                         {
@@ -892,6 +659,7 @@ namespace GridViewEx
                                 Visible = gridViewExColumn.Visible,
                                 Type = "ColumnEx",
                                 Index = index,
+                                DisplayIndex = displayIndex,
                                 DataFormat = gridViewExColumn.DataFormat,
                                 DataFormatExpression = gridViewExColumn.DataFormatExpression
                             });
@@ -903,6 +671,8 @@ namespace GridViewEx
                                 if (sortExpr != null)
                                     sortExpr.DisplayName = gridViewExColumn.HeaderText;
                             }
+
+                            displayIndex++;
                         }
                         else if (gridViewExCheckBox != null)
                         {
@@ -914,6 +684,7 @@ namespace GridViewEx
                                 Visible = gridViewExCheckBox.Visible,
                                 Type = "CheckBoxEx",
                                 Index = index,
+                                DisplayIndex = displayIndex,
                                 DataFormat = DataFormatEnum.Text,
                                 DataFormatExpression = String.Empty
                             });
@@ -925,6 +696,8 @@ namespace GridViewEx
                                 if (sortExpr != null)
                                     sortExpr.DisplayName = gridViewExCheckBox.HeaderText;
                             }
+
+                            displayIndex++;
                         }
                         else if (boundColumn != null)
                         {
@@ -936,6 +709,7 @@ namespace GridViewEx
                                 Visible = boundColumn.Visible,
                                 Type = "BoundField",
                                 Index = index,
+                                DisplayIndex = displayIndex,
                                 DataFormat = DataFormatEnum.Text,
                                 DataFormatExpression = String.Empty
                             });
@@ -947,6 +721,8 @@ namespace GridViewEx
                                 if (sortExpr != null)
                                     sortExpr.DisplayName = boundColumn.HeaderText;
                             }
+
+                            displayIndex++;
                         }
                         else if (checkboxColumn != null)
                         {
@@ -958,6 +734,7 @@ namespace GridViewEx
                                 Visible = checkboxColumn.Visible,
                                 Type = "CheckBoxField",
                                 Index = index,
+                                DisplayIndex = displayIndex,
                                 DataFormat = DataFormatEnum.Text,
                                 DataFormatExpression = String.Empty
                             });
@@ -969,6 +746,24 @@ namespace GridViewEx
                                 if (sortExpr != null)
                                     sortExpr.DisplayName = checkboxColumn.HeaderText;
                             }
+
+                            displayIndex++;
+                        }
+
+                        else if (templateFieldColumn != null)
+                        {
+                            columns.Add(new ColumnExpression
+                            {
+                                ID = index,
+                                Column = null,
+                                DisplayName = templateFieldColumn.HeaderText,
+                                Visible = templateFieldColumn.Visible,
+                                Type = "TemplateField",
+                                Index = index,
+                                DisplayIndex = displayIndex,
+                                DataFormat = DataFormatEnum.Text,
+                                DataFormatExpression = String.Empty
+                            });
                         }
 
                         index++;
@@ -1089,7 +884,8 @@ namespace GridViewEx
                         && gridViewExColumn.SearchType == SearchTypeEnum.DropDownList
                         && gridViewExColumn.DropDownDataSource == null)
                     {
-                        gridViewExColumn.DropDownDataSource = query.GetDropDownDataSource(gridViewExColumn.DataField, gridViewExColumn.DataFormat, gridViewExColumn.DataFormatExpression);
+                        gridViewExColumn.DropDownDataSource = query.GetDropDownDataSource(gridViewExColumn.DataField, gridViewExColumn.DataFormat, gridViewExColumn.DataFormatExpression, CultureInfo);
+                        // TODO: Check, we might have a problem with the currency symbol
                     }
                 }
 
@@ -1173,12 +969,20 @@ namespace GridViewEx
 
             if (ExcelExport != null)
             {
+                var icon = BootstrapVersion >= 3
+                    ? "glyphicon glyphicon-download"
+                    : "icon-download";
+
+                var btnClass = BootstrapVersion >= 3
+                    ? "btn btn-default btn-sm"
+                    : "btn";
+
                 var lbExport = new LinkButton
                 {
                     ID = "lbExport",
-                    CssClass = "btn pull-right",
+                    CssClass = btnClass + " pull-right",
                     ToolTip = "Export to Excel",
-                    Text = "<i class=\"icon-download\"></i>"
+                    Text = "<i class=\"" + icon + "\"></i>"
                 };
                 lbExport.Click += lbExport_Click;
                 lbExport.Attributes.Add("style", "margin-right: 10px;");
@@ -1211,20 +1015,31 @@ namespace GridViewEx
 
             var phControl = new PlaceHolder();
 
-            var hlFilterSelection = new HtmlAnchor
-            {
-                ID = "hl" + ID + "FilterSelection",
-                ClientIDMode = ClientIDMode.Static,
-                HRef = "#",
-                Title = "Filter Management",
-                InnerHtml = "<i class=\"icon-filter\"></i>"
-            };
-            hlFilterSelection.Attributes.Add("class", "btn pull-right");
-            hlFilterSelection.Attributes.Add("style", "margin-right: 10px;");
-            if (filters.Count >= 1)
-                hlFilterSelection.Attributes["style"] += "background-color: #B2C6E0;background-image: linear-gradient(to bottom, #FFFFFF, #B2C6E0);";
+            var icon = BootstrapVersion >= 3
+                ? "glyphicon glyphicon-filter"
+                : "icon-filter";
 
-            phControl.Controls.Add(hlFilterSelection);
+            var btnClass = BootstrapVersion >= 3
+                ? "btn btn-default btn-sm"
+                : "btn";
+
+            var btnFilterSelection = new HtmlButton
+            {
+                ID = "btn" + ID + "FilterSelection",
+                ClientIDMode = ClientIDMode.Static,
+                InnerHtml = "<i class=\"" + icon + "\"></i>"
+            };
+
+            btnFilterSelection.Attributes.Add("type", "button");
+            btnFilterSelection.Attributes.Add("title", "Filter Management");
+            btnFilterSelection.Attributes.Add("class", btnClass + " pull-right");
+            btnFilterSelection.Attributes.Add("style", "margin-right: 10px;");
+            btnFilterSelection.Attributes.Add("data-toggle", "popover");
+            if (filters.Count >= 1)
+                //hlFilterSelection.Attributes["style"] += "background-color: #B2C6E0;background-image: linear-gradient(to bottom, #FFFFFF, #B2C6E0);";
+                btnFilterSelection.Attributes["class"] += " active";
+
+            phControl.Controls.Add(btnFilterSelection);
 
             var divFilterSelection = new HtmlGenericControl("div");
             divFilterSelection.ID = "div" + ID + "FilterSelection";
@@ -1244,6 +1059,10 @@ namespace GridViewEx
 
             if (filters.Count >= 1)
             {
+                icon = BootstrapVersion >= 3
+                    ? "glyphicon glyphicon-remove"
+                    : "icon-remove";
+
                 foreach (var filterExpression in filters)
                 {
                     var r = new Regex(@"
@@ -1255,7 +1074,7 @@ namespace GridViewEx
 
                     var lbRemove = new LinkButton
                     {
-                        Text = "<i class=\"icon-remove\"></i>",
+                        Text = "<i class=\"" + icon + "\"></i>",
                         ToolTip = "Remove",
                         CommandArgument = filterExpression.Column + "|" + filterExpression.ExpressionShortName + "|" + filterExpression.Text
                     };
@@ -1280,8 +1099,8 @@ namespace GridViewEx
 
             phControl.Controls.Add(divFilterSelection);
 
-            JSScriptEndRequestHandler += ClientID + @"Popover('#" + hlFilterSelection.ClientID + "','#" + divFilterSelection.ClientID + "');";
-            JSScriptDocumentReady += ClientID + @"Popover('#" + hlFilterSelection.ClientID + "','#" + divFilterSelection.ClientID + "');";
+            JSScriptEndRequestHandler += @"GVEXPopover('#" + btnFilterSelection.ClientID + "','#" + divFilterSelection.ClientID + "');";
+            JSScriptDocumentReady += @"GVEXPopover('#" + btnFilterSelection.ClientID + "','#" + divFilterSelection.ClientID + "');";
 
             return phControl;
         }
@@ -1297,20 +1116,30 @@ namespace GridViewEx
 
             var phControl = new PlaceHolder();
 
-            var hlSortSelection = new HtmlAnchor
-            {
-                ID = "hl" + ID + "SortSelection",
-                ClientIDMode = ClientIDMode.Static,
-                HRef = "#",
-                Title = "Sorting Management",
-                InnerHtml = "<i class=\"icon-list-alt\"></i>",
-            };
-            hlSortSelection.Attributes.Add("class", "btn pull-right");
-            hlSortSelection.Attributes.Add("style", "margin-right: 10px;");
-            if (sortings.Count >= 1)
-                hlSortSelection.Attributes["style"] += "background-color: #B2C6E0;background-image: linear-gradient(to bottom, #FFFFFF, #B2C6E0);";
+            var icon = BootstrapVersion >= 3
+                ? "glyphicon glyphicon-list-alt"
+                : "icon-list-alt";
 
-            phControl.Controls.Add(hlSortSelection);
+            var btnClass = BootstrapVersion >= 3
+                ? "btn btn-default btn-sm"
+                : "btn";
+
+            var btnSortSelection = new HtmlButton
+            {
+                ID = "btn" + ID + "SortSelection",
+                ClientIDMode = ClientIDMode.Static,
+                InnerHtml = "<i class=\"" + icon + "\"></i>",
+            };
+            btnSortSelection.Attributes.Add("type", "button");
+            btnSortSelection.Attributes.Add("title", "Sorting Management");
+            btnSortSelection.Attributes.Add("class", btnClass + " pull-right");
+            btnSortSelection.Attributes.Add("style", "margin-right: 10px;");
+            btnSortSelection.Attributes.Add("data-toggle", "popover");
+            if (sortings.Count >= 1)
+                //hlSortSelection.Attributes["style"] += "background-color: #B2C6E0;background-image: linear-gradient(to bottom, #FFFFFF, #B2C6E0);";
+                btnSortSelection.Attributes["class"] += " active";
+
+            phControl.Controls.Add(btnSortSelection);
 
             var divSortSelection = new HtmlGenericControl("div");
             divSortSelection.ID = "div" + ID + "SortSelection";
@@ -1334,18 +1163,26 @@ namespace GridViewEx
                 {
                     var liSort = new HtmlGenericControl("li");
 
+                    icon = BootstrapVersion >= 3
+                        ? "glyphicon glyphicon-remove"
+                        : "icon-remove";
+
                     var lbRemove = new LinkButton
                     {
-                        Text = "<i class=\"icon-remove\"></i>",
+                        Text = "<i class=\"" + icon + "\"></i>",
                         ToolTip = "Remove",
                         CommandArgument = sortExpression.Column
                     };
                     lbRemove.Click += lbSortingRemove_Click;
                     liSort.Controls.Add(lbRemove);
 
+                    icon = BootstrapVersion >= 3
+                        ? "glyphicon glyphicon-arrow-up"
+                        : "icon-arrow-up";
+
                     var lbChangeIndexUp = new LinkButton
                     {
-                        Text = "<i class=\"icon-arrow-up\"></i>",
+                        Text = "<i class=\"" + icon + "\"></i>",
                         ToolTip = "Up",
                         CommandArgument = sortExpression.Column,
                         Visible = sortings.Count > 1
@@ -1354,9 +1191,13 @@ namespace GridViewEx
                     lbChangeIndexUp.Click += lbSortingChangeIndexUp_Click;
                     liSort.Controls.Add(lbChangeIndexUp);
 
+                    icon = BootstrapVersion >= 3
+                        ? "glyphicon glyphicon-arrow-down"
+                        : "icon-arrow-down";
+
                     var lbChangeIndexDown = new LinkButton
                     {
-                        Text = "<i class=\"icon-arrow-down\"></i>",
+                        Text = "<i class=\"" + icon + "\"></i>",
                         ToolTip = "Down",
                         CommandArgument = sortExpression.Column,
                         Visible = sortings.Count > 1
@@ -1377,8 +1218,8 @@ namespace GridViewEx
 
             phControl.Controls.Add(divSortSelection);
 
-            JSScriptEndRequestHandler += ClientID + @"Popover('#" + hlSortSelection.ClientID + "','#" + divSortSelection.ClientID + "');";
-            JSScriptDocumentReady += ClientID + @"Popover('#" + hlSortSelection.ClientID + "','#" + divSortSelection.ClientID + "');";
+            JSScriptEndRequestHandler += @"GVEXPopover('#" + btnSortSelection.ClientID + "','#" + divSortSelection.ClientID + "');";
+            JSScriptDocumentReady += @"GVEXPopover('#" + btnSortSelection.ClientID + "','#" + divSortSelection.ClientID + "');";
 
             return phControl;
         }
@@ -1396,17 +1237,28 @@ namespace GridViewEx
                     ? (List<ColumnExpression>)Context.Session[ID + "_Columns"]
                     : new List<ColumnExpression>();
 
-                var hlColumnSelection = new HtmlAnchor
+                columns = columns.Where(x => x.Type != "TemplateField").ToList();
+
+                var icon = BootstrapVersion >= 3
+                    ? "glyphicon glyphicon-calendar"
+                    : "icon-calendar";
+
+                var btnClass = BootstrapVersion >= 3
+                    ? "btn btn-default btn-sm"
+                    : "btn";
+
+                var btnColumnSelection = new HtmlButton
                 {
-                    ID = "hl" + ID + "ColumnSelection",
+                    ID = "btn" + ID + "ColumnSelection",
                     ClientIDMode = ClientIDMode.Static,
-                    HRef = "#",
-                    Title = "Column Management",
-                    InnerHtml = "<i class=\"icon-calendar\"></i>"
+                    InnerHtml = "<i class=\"" + icon + "\"></i>"
                 };
-                hlColumnSelection.Attributes.Add("class", "btn pull-right");
-                hlColumnSelection.Attributes.Add("style", "margin-right: 10px;");
-                phControl.Controls.Add(hlColumnSelection);
+                btnColumnSelection.Attributes.Add("type", "button");
+                btnColumnSelection.Attributes.Add("title", "Column Management");
+                btnColumnSelection.Attributes.Add("class", btnClass + " pull-right");
+                btnColumnSelection.Attributes.Add("style", "margin-right: 10px;");
+                btnColumnSelection.Attributes.Add("data-toggle", "popover");
+                phControl.Controls.Add(btnColumnSelection);
 
                 var js = new JavaScriptSerializer();
 
@@ -1418,7 +1270,7 @@ namespace GridViewEx
                     {
                         ID = x.ID,
                         V = Convert.ToInt32(x.Visible),
-                        I = x.Index
+                        I = x.DisplayIndex
                     }))
                 };
                 phControl.Controls.Add(hfColumnsSelected);
@@ -1428,25 +1280,28 @@ namespace GridViewEx
                 divColumnSelection.ClientIDMode = ClientIDMode.Static;
                 divColumnSelection.Attributes.Add("style", "display: none;");
 
-                var hlHideAll = new HtmlAnchor
+                var btnHideAll = new HtmlButton
                 {
-                    ID = "hl" + ID + "HideAll",
+                    ID = "btn" + ID + "HideAll",
                     ClientIDMode = ClientIDMode.Static,
-                    HRef = "#",
                     InnerText = "Hide All",
-                    Title = "Hide all columns",
                     Visible = columns.Count >= 1
                 };
+                btnHideAll.Attributes.Add("type", "button");
+                btnHideAll.Attributes.Add("class", "btn btn-link");
+                btnHideAll.Attributes.Add("title", "Hide all columns");
 
-                var hlShowAll = new HtmlAnchor
+                var btnShowAll = new HtmlButton
                 {
                     ID = "hl" + ID + "ShowAll",
                     ClientIDMode = ClientIDMode.Static,
-                    HRef = "#",
                     InnerText = "Show All",
-                    Title = "Show all columns",
                     Visible = columns.Count >= 1
                 };
+                btnShowAll.Attributes.Add("type", "button");
+                btnShowAll.Attributes.Add("class", "btn btn-link");
+                btnShowAll.Attributes.Add("title", "Show all columns");
+
                 var lbApply = new LinkButton
                 {
                     ID = "lb" + ID + "Apply",
@@ -1455,11 +1310,12 @@ namespace GridViewEx
                     ToolTip = "Apply changes",
                     Visible = columns.Count >= 1
                 };
+                lbApply.Attributes.Add("class", "btn btn-link");
                 lbApply.Attributes.Add("style", "display: none;float: right;");
                 lbApply.Click += lbColumnApply_Click;
 
-                hlHideAll.Attributes.Add("onclick", ClientID + "ColumnSelectionShowAll(this, false, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');$('#" + hlHideAll.ClientID + @", #" + hlShowAll.ClientID + @"').toggle();");
-                hlShowAll.Attributes.Add("onclick", ClientID + "ColumnSelectionShowAll(this, true, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');$('#" + hlHideAll.ClientID + @", #" + hlShowAll.ClientID + @"').toggle();");
+                btnHideAll.Attributes.Add("onclick", "GVEXColumnSelectionShowAll('" + ClientID + "', this, false, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');$('#" + btnHideAll.ClientID + @", #" + btnShowAll.ClientID + @"').toggle();");
+                btnShowAll.Attributes.Add("onclick", "GVEXColumnSelectionShowAll('" + ClientID + "', this, true, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');$('#" + btnHideAll.ClientID + @", #" + btnShowAll.ClientID + @"').toggle();");
 
                 var isAllVisible = true;
                 foreach (var column in columns)
@@ -1470,35 +1326,42 @@ namespace GridViewEx
                     }
 
                 if (isAllVisible)
-                    hlShowAll.Attributes.Add("style", "display: none;");
+                    btnShowAll.Attributes.Add("style", "display: none;");
                 else
-                    hlHideAll.Attributes.Add("style", "display: none;");
+                    btnHideAll.Attributes.Add("style", "display: none;");
 
-                divColumnSelection.Controls.Add(hlHideAll);
-                divColumnSelection.Controls.Add(hlShowAll);
+                divColumnSelection.Controls.Add(btnHideAll);
+                divColumnSelection.Controls.Add(btnShowAll);
                 divColumnSelection.Controls.Add(lbApply);
 
                 if (columns.Count >= 1)
                 {
                     var ol = new HtmlGenericControl("ol");
 
-                    foreach (var column in columns)
+                    for (int i = 0; i < columns.Count(); i++)
                     {
+                        var column = columns[i];
                         var liColumn = new HtmlGenericControl("li");
 
-                        var cbVisible = new HtmlInputCheckBox
+                        var cbVisible = new CheckBox
                         {
-                            Checked = column.Visible
+                            Checked = column.Visible,
+                            ID = "cb" + ID + "ColumnVisible" + i,
+                            ClientIDMode = ClientIDMode.Static,
                         };
-                        cbVisible.Attributes.Add("title", "Check to make it visible");
-                        cbVisible.Attributes.Add("onclick", ClientID + "ColumnSelectionChanged(this, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
-                        cbVisible.Attributes.Add("data-field", column.ID.ToString());
-                        cbVisible.Attributes.Add("data-index", column.Index.ToString());
+                        cbVisible.InputAttributes.Add("title", "Check to make it visible");
+                        cbVisible.InputAttributes.Add("onclick", "GVEXColumnSelectionChanged('" + ClientID + "', this, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
+                        cbVisible.InputAttributes.Add("data-field", column.ID.ToString());
+                        cbVisible.InputAttributes.Add("data-index", column.DisplayIndex.ToString());
                         liColumn.Controls.Add(cbVisible);
+
+                        icon = BootstrapVersion >= 3
+                            ? "glyphicon glyphicon-arrow-up"
+                            : "icon-arrow-up";
 
                         var lbChangeIndexUp = new HtmlAnchor
                         {
-                            InnerHtml = "<i class=\"icon-arrow-up\"></i>",
+                            InnerHtml = "<i class=\"" + icon + "\"></i>",
                             Title = "Up"
                         };
 
@@ -1507,12 +1370,16 @@ namespace GridViewEx
                             lbChangeIndexUp.Attributes.Add("style", "visibility: hidden;");
 
                         lbChangeIndexUp.Attributes.Add("data-action", "up");
-                        lbChangeIndexUp.Attributes.Add("onclick", ClientID + "ColumnIndexChanged(this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) - 1, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
+                        lbChangeIndexUp.Attributes.Add("onclick", "GVEXColumnIndexChanged('" + ClientID + "', this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) - 1, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
                         liColumn.Controls.Add(lbChangeIndexUp);
+
+                        icon = BootstrapVersion >= 3
+                            ? "glyphicon glyphicon-arrow-down"
+                            : "icon-arrow-down";
 
                         var lbChangeIndexDown = new HtmlAnchor
                         {
-                            InnerHtml = "<i class=\"icon-arrow-down\"></i>",
+                            InnerHtml = "<i class=\"" + icon + "\"></i>",
                             Title = "Down"
                         };
                         if (columns.Count <= 1
@@ -1520,7 +1387,7 @@ namespace GridViewEx
                             lbChangeIndexDown.Attributes.Add("style", "visibility: hidden;");
 
                         lbChangeIndexDown.Attributes.Add("data-action", "down");
-                        lbChangeIndexDown.Attributes.Add("onclick", ClientID + "ColumnIndexChanged(this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) + 1, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
+                        lbChangeIndexDown.Attributes.Add("onclick", "GVEXColumnIndexChanged('" + ClientID + "', this, parseInt($(this).parent().children().closest('input:checkbox').attr('data-index')) + 1, '#" + hfColumnsSelected.ClientID + "', '#" + lbApply.ClientID + "');");
                         liColumn.Controls.Add(lbChangeIndexDown);
 
                         liColumn.Controls.Add(new Literal { Text = column.DisplayName });
@@ -1535,8 +1402,8 @@ namespace GridViewEx
 
                 phControl.Controls.Add(divColumnSelection);
 
-                JSScriptEndRequestHandler += ClientID + @"Popover('#" + hlColumnSelection.ClientID + "', '#" + divColumnSelection.ClientID + "');";
-                JSScriptDocumentReady += ClientID + @"Popover('#" + hlColumnSelection.ClientID + "', '#" + divColumnSelection.ClientID + "');";
+                JSScriptEndRequestHandler += @"GVEXPopover('#" + btnColumnSelection.ClientID + "', '#" + divColumnSelection.ClientID + "');";
+                JSScriptDocumentReady += @"GVEXPopover('#" + btnColumnSelection.ClientID + "', '#" + divColumnSelection.ClientID + "');";
             }
 
             return phControl;
@@ -1549,6 +1416,10 @@ namespace GridViewEx
         {
             var phControl = new PlaceHolder();
 
+            var btnClass = BootstrapVersion >= 3
+                ? "btn btn-default btn-sm"
+                : "btn";
+
             if (ViewChanged != null)
             {
                 var views = (List<ViewExpression>)Context.Session[ID + "_ViewExpressions"] != null
@@ -1558,10 +1429,14 @@ namespace GridViewEx
 
                 if (views.Count >= 1)
                 {
+                    var inputAppendClass = BootstrapVersion >= 3
+                        ? "input-group input-group-sm"
+                        : "input-append";
+
                     var divAppend = new HtmlGenericControl("div");
                     divAppend.ID = "divViewExpressionList";
                     divAppend.ClientIDMode = ClientIDMode.Static;
-                    divAppend.Attributes.Add("class", "pull-right input-append");
+                    divAppend.Attributes.Add("class", "pull-right " + inputAppendClass);
                     divAppend.Attributes.Add("style", "margin-right: 10px;");
 
                     var ddlViews = new DropDownList
@@ -1569,7 +1444,9 @@ namespace GridViewEx
                         ID = "ddl" + ID + "ViewExpressionList",
                         ClientIDMode = ClientIDMode.Static,
                         AutoPostBack = true,
-                        CssClass = "span1"
+                        CssClass = BootstrapVersion >= 3
+                            ? "form-control col-md-1"
+                            : "span1"
                     };
                     ddlViews.SelectedIndexChanged += ddlViews_SelectedIndexChanged;
 
@@ -1582,36 +1459,65 @@ namespace GridViewEx
 
                     divAppend.Controls.Add(ddlViews);
 
-                    var hlViewExpression = new HtmlAnchor
+                    if (BootstrapVersion >= 3)
                     {
-                        ID = "hl" + ID + "ViewExpression",
-                        ClientIDMode = ClientIDMode.Static,
-                        HRef = "#div" + ID + "ViewExpression",
-                        Title = "View Management",
-                        InnerHtml = "<i class=\"icon-eye-open\"></i>",
-                    };
-                    hlViewExpression.Attributes.Add("data-toggle", "modal");
-                    hlViewExpression.Attributes.Add("role", "button");
-                    hlViewExpression.Attributes.Add("style", "display: inline-block;");
-                    hlViewExpression.Attributes.Add("class", "btn add-on");
+                        var spanViewExpressoion = new HtmlGenericControl("span");
+                        spanViewExpressoion.Attributes.Add("class", "input-group-btn");
 
-                    divAppend.Controls.Add(hlViewExpression);
+                        var hlViewExpression = new HtmlAnchor
+                        {
+                            ID = "hl" + ID + "ViewExpression",
+                            ClientIDMode = ClientIDMode.Static,
+                            HRef = "#div" + ID + "ViewExpression",
+                            Title = "View Management",
+                            InnerHtml = "<i class=\"glyphicon glyphicon-eye-open\"></i>",
+                        };
+                        hlViewExpression.Attributes.Add("data-toggle", "modal");
+                        hlViewExpression.Attributes.Add("role", "button");
+                        hlViewExpression.Attributes.Add("style", "display: inline-block;");
+                        hlViewExpression.Attributes.Add("class", btnClass);
+
+                        spanViewExpressoion.Controls.Add(hlViewExpression);
+                        divAppend.Controls.Add(spanViewExpressoion);
+                    }
+                    else
+                    {
+                        var hlViewExpression = new HtmlAnchor
+                        {
+                            ID = "hl" + ID + "ViewExpression",
+                            ClientIDMode = ClientIDMode.Static,
+                            HRef = "#div" + ID + "ViewExpression",
+                            Title = "View Management",
+                            InnerHtml = "<i class=\"icon-eye-open\"></i>",
+                        };
+                        hlViewExpression.Attributes.Add("data-toggle", "modal");
+                        hlViewExpression.Attributes.Add("role", "button");
+                        hlViewExpression.Attributes.Add("style", "display: inline-block;");
+                        hlViewExpression.Attributes.Add("class", btnClass + " add-on");
+
+                        divAppend.Controls.Add(hlViewExpression);
+                    }
+
                     phControl.Controls.Add(divAppend);
                 }
                 else
                 {
+                    var icon = BootstrapVersion >= 3
+                        ? "glyphicon glyphicon-eye-open"
+                        : "icon-eye-open";
+
                     var hlViewExpression = new HtmlAnchor
                     {
                         ID = "hl" + ID + "ViewExpression",
                         ClientIDMode = ClientIDMode.Static,
                         HRef = "#div" + ID + "ViewExpression",
                         Title = "View Management",
-                        InnerHtml = "<i class=\"icon-eye-open\"></i>",
+                        InnerHtml = "<i class=\"" + icon + "\"></i>",
                     };
                     hlViewExpression.Attributes.Add("data-toggle", "modal");
                     hlViewExpression.Attributes.Add("role", "button");
                     hlViewExpression.Attributes.Add("style", "display: inline-block;margin-right: 10px;");
-                    hlViewExpression.Attributes.Add("class", "btn pull-right");
+                    hlViewExpression.Attributes.Add("class", btnClass + " pull-right");
 
                     phControl.Controls.Add(hlViewExpression);
                 }
@@ -1619,11 +1525,18 @@ namespace GridViewEx
                 var divViewExpression = new HtmlGenericControl("div");
                 divViewExpression.ID = "div" + ID + "ViewExpression";
                 divViewExpression.ClientIDMode = ClientIDMode.Static;
-                divViewExpression.Attributes.Add("class", "modal hide fade");
+                divViewExpression.Attributes.Add("class", BootstrapVersion >= 3 ? "modal fade" : "modal hide fade");
                 divViewExpression.Attributes.Add("tabindex", "-1");
                 divViewExpression.Attributes.Add("role", "dialog");
-                divViewExpression.Attributes.Add("aria-labelledby", "h3" + ID + "ViewExpressionLabel");
+                //divViewExpression.Attributes.Add("aria-labelledby", "h3" + ID + "ViewExpressionLabel");
                 divViewExpression.Attributes.Add("aria-hidden", "true");
+
+                var divViewExpressionModalDialog = new HtmlGenericControl("div");
+                divViewExpressionModalDialog.Attributes.Add("class", "modal-dialog");
+
+                var divViewExpressionModalContent = new HtmlGenericControl("div");
+                divViewExpressionModalContent.Attributes.Add("class", "modal-content");
+                divViewExpressionModalDialog.Controls.Add(divViewExpressionModalContent);
 
                 /* START MODAL HEADER */
                 var divModalHeader = new HtmlGenericControl("div");
@@ -1636,13 +1549,28 @@ namespace GridViewEx
                 btnCloseModal.Attributes.Add("aria-hidden", "true");
                 divModalHeader.Controls.Add(btnCloseModal);
 
-                var h3ModalLabel = new HtmlGenericControl("h3");
-                h3ModalLabel.ID = "h3" + ID + "ViewExpressionLabel";
-                h3ModalLabel.ClientIDMode = ClientIDMode.Static;
-                h3ModalLabel.InnerText = "View Management";
-                divModalHeader.Controls.Add(h3ModalLabel);
+                if (BootstrapVersion >= 3)
+                {
+                    var h4ModalLabel = new HtmlGenericControl("h4");
+                    h4ModalLabel.ID = "h4" + ID + "ViewExpressionLabel";
+                    h4ModalLabel.ClientIDMode = ClientIDMode.Static;
+                    h4ModalLabel.Attributes.Add("class", "modal-title");
+                    h4ModalLabel.InnerText = "View Management";
+                    divModalHeader.Controls.Add(h4ModalLabel);
+                }
+                else
+                {
+                    var h3ModalLabel = new HtmlGenericControl("h3");
+                    h3ModalLabel.ID = "h3" + ID + "ViewExpressionLabel";
+                    h3ModalLabel.ClientIDMode = ClientIDMode.Static;
+                    h3ModalLabel.InnerText = "View Management";
+                    divModalHeader.Controls.Add(h3ModalLabel);
+                }
 
-                divViewExpression.Controls.Add(divModalHeader);
+                if (BootstrapVersion >= 3)
+                    divViewExpressionModalContent.Controls.Add(divModalHeader);
+                else
+                    divViewExpression.Controls.Add(divModalHeader);
                 /* END MODAL HEADER */
 
                 /* START MODAL BODY */
@@ -1650,14 +1578,19 @@ namespace GridViewEx
                 divModalBody.Attributes.Add("class", "modal-body");
 
                 var divModalBodyRow = new HtmlGenericControl("div");
-                divModalBodyRow.Attributes.Add("class", "row-fluid");
+                divModalBodyRow.Attributes.Add("class", BootstrapVersion >= 3
+                    ? "row"
+                    : "row-fluid");
 
                 var divModalBodyRowSpan = new HtmlGenericControl("div");
-                divModalBodyRowSpan.Attributes.Add("class", "span12");
+                divModalBodyRowSpan.Attributes.Add("class", BootstrapVersion >= 3
+                    ? "col-md-6"
+                    : "span12");
 
                 var txtViewName = new TextBox
                 {
                     ID = "txt" + ID + "ViewExpressionTitle",
+                    CssClass = BootstrapVersion >= 3 ? "form-control" : "",
                     ClientIDMode = ClientIDMode.Static
                 };
                 txtViewName.Attributes.Add("placeholder", "View name...");
@@ -1667,73 +1600,167 @@ namespace GridViewEx
                 divModalBody.Controls.Add(divModalBodyRow);
 
                 var divModalBodyRow2 = new HtmlGenericControl("div");
-                divModalBodyRow2.Attributes.Add("class", "row-fluid");
+                divModalBodyRow2.Attributes.Add("class", BootstrapVersion >= 3
+                    ? "row"
+                    : "row-fluid");
 
                 var divModalBodyRowSpan1 = new HtmlGenericControl("div");
-                divModalBodyRowSpan1.Attributes.Add("class", "span6");
+                divModalBodyRowSpan1.Attributes.Add("class", BootstrapVersion >= 3
+                    ? "col-md-6"
+                    : "span6");
 
                 var divModalBodyRowSpan1Cb = new HtmlGenericControl("div");
                 divModalBodyRowSpan1Cb.ID = "div" + ID + "ViewExpressionCheckBoxes";
                 divModalBodyRowSpan1Cb.ClientIDMode = ClientIDMode.Static;
 
-                var cbSaveFilterLabel = new HtmlGenericControl("label");
-                cbSaveFilterLabel.Attributes.Add("class", "checkbox");
-                cbSaveFilterLabel.Controls.Add(new CheckBox
+                if (BootstrapVersion >= 3)
                 {
-                    Checked = true,
-                    ID = "cb" + ID + "ViewExpressionFilters",
-                    ClientIDMode = ClientIDMode.Static
-                });
-                cbSaveFilterLabel.Controls.Add(new Literal { Text = " Save Filters" });
-                divModalBodyRowSpan1Cb.Controls.Add(cbSaveFilterLabel);
+                    var divSaveFilterLabel = new HtmlGenericControl("div");
+                    var cbSaveFilterLabel = new HtmlGenericControl("label");
+                    divSaveFilterLabel.Attributes.Add("class", "checkbox");
+                    cbSaveFilterLabel.Controls.Add(new CheckBox
+                    {
+                        Checked = true,
+                        ID = "cb" + ID + "ViewExpressionFilters",
+                        ClientIDMode = ClientIDMode.Static
+                    });
+                    cbSaveFilterLabel.Controls.Add(new Literal { Text = " Save Filters" });
+                    divSaveFilterLabel.Controls.Add(cbSaveFilterLabel);
+                    divModalBodyRowSpan1Cb.Controls.Add(divSaveFilterLabel);
+                }
+                else
+                {
+                    var cbSaveFilterLabel = new HtmlGenericControl("label");
+                    cbSaveFilterLabel.Attributes.Add("class", "checkbox");
+                    cbSaveFilterLabel.Controls.Add(new CheckBox
+                    {
+                        Checked = true,
+                        ID = "cb" + ID + "ViewExpressionFilters",
+                        ClientIDMode = ClientIDMode.Static
+                    });
+                    cbSaveFilterLabel.Controls.Add(new Literal { Text = " Save Filters" });
+                    divModalBodyRowSpan1Cb.Controls.Add(cbSaveFilterLabel);
+                }
 
-                var cbSaveSortingLabel = new HtmlGenericControl("label");
-                cbSaveSortingLabel.Attributes.Add("class", "checkbox");
-                cbSaveSortingLabel.Controls.Add(new CheckBox
+                if (BootstrapVersion >= 3)
                 {
-                    Checked = true,
-                    ID = "cb" + ID + "ViewExpressionSortings"
-                });
-                cbSaveSortingLabel.Controls.Add(new Literal { Text = " Save Sortings" });
-                divModalBodyRowSpan1Cb.Controls.Add(cbSaveSortingLabel);
+                    var divSaveSortingLabel = new HtmlGenericControl("div");
+                    var cbSaveSortingLabel = new HtmlGenericControl("label");
+                    divSaveSortingLabel.Attributes.Add("class", "checkbox");
+                    cbSaveSortingLabel.Controls.Add(new CheckBox
+                    {
+                        Checked = true,
+                        ID = "cb" + ID + "ViewExpressionSortings"
+                    });
+                    cbSaveSortingLabel.Controls.Add(new Literal { Text = " Save Sortings" });
+                    divSaveSortingLabel.Controls.Add(cbSaveSortingLabel);
+                    divModalBodyRowSpan1Cb.Controls.Add(divSaveSortingLabel);
+                }
+                else
+                {
+                    var cbSaveSortingLabel = new HtmlGenericControl("label");
+                    cbSaveSortingLabel.Attributes.Add("class", "checkbox");
+                    cbSaveSortingLabel.Controls.Add(new CheckBox
+                    {
+                        Checked = true,
+                        ID = "cb" + ID + "ViewExpressionSortings"
+                    });
+                    cbSaveSortingLabel.Controls.Add(new Literal { Text = " Save Sortings" });
+                    divModalBodyRowSpan1Cb.Controls.Add(cbSaveSortingLabel);
+                }
 
-                var cbSaveColumnLabel = new HtmlGenericControl("label");
-                cbSaveColumnLabel.Attributes.Add("class", "checkbox");
-                cbSaveColumnLabel.Controls.Add(new CheckBox
+                if (BootstrapVersion >= 3)
                 {
-                    Checked = true,
-                    ID = "cb" + ID + "ViewExpressionColumns"
-                });
-                cbSaveColumnLabel.Controls.Add(new Literal { Text = " Save Columns" });
-                divModalBodyRowSpan1Cb.Controls.Add(cbSaveColumnLabel);
+                    var divSaveColumnLabel = new HtmlGenericControl("div");
+                    var cbSaveColumnLabel = new HtmlGenericControl("label");
+                    divSaveColumnLabel.Attributes.Add("class", "checkbox");
+                    cbSaveColumnLabel.Controls.Add(new CheckBox
+                    {
+                        Checked = true,
+                        ID = "cb" + ID + "ViewExpressionColumns"
+                    });
+                    cbSaveColumnLabel.Controls.Add(new Literal { Text = " Save Columns" });
+                    divSaveColumnLabel.Controls.Add(cbSaveColumnLabel);
+                    divModalBodyRowSpan1Cb.Controls.Add(divSaveColumnLabel);
+                }
+                else
+                {
+                    var cbSaveColumnLabel = new HtmlGenericControl("label");
+                    cbSaveColumnLabel.Attributes.Add("class", "checkbox");
+                    cbSaveColumnLabel.Controls.Add(new CheckBox
+                    {
+                        Checked = true,
+                        ID = "cb" + ID + "ViewExpressionColumns"
+                    });
+                    cbSaveColumnLabel.Controls.Add(new Literal { Text = " Save Columns" });
+                    divModalBodyRowSpan1Cb.Controls.Add(cbSaveColumnLabel);
+                }
 
-                var cbSavePageSizeLabel = new HtmlGenericControl("label");
-                cbSavePageSizeLabel.Attributes.Add("class", "checkbox");
-                cbSavePageSizeLabel.Controls.Add(new CheckBox
+                if (BootstrapVersion >= 3)
                 {
-                    Checked = false,
-                    ID = "cb" + ID + "ViewExpressionPageSize"
-                });
-                cbSavePageSizeLabel.Controls.Add(new Literal { Text = " Save Page Size" });
-                divModalBodyRowSpan1Cb.Controls.Add(cbSavePageSizeLabel);
+                    var divSavePageSizeLabel = new HtmlGenericControl("div");
+                    var cbSavePageSizeLabel = new HtmlGenericControl("label");
+                    divSavePageSizeLabel.Attributes.Add("class", "checkbox");
+                    cbSavePageSizeLabel.Controls.Add(new CheckBox
+                    {
+                        Checked = false,
+                        ID = "cb" + ID + "ViewExpressionPageSize"
+                    });
+                    cbSavePageSizeLabel.Controls.Add(new Literal { Text = " Save Page Size" });
+                    divSavePageSizeLabel.Controls.Add(cbSavePageSizeLabel);
+                    divModalBodyRowSpan1Cb.Controls.Add(divSavePageSizeLabel);
+                }
+                else
+                {
+                    var cbSavePageSizeLabel = new HtmlGenericControl("label");
+                    cbSavePageSizeLabel.Attributes.Add("class", "checkbox");
+                    cbSavePageSizeLabel.Controls.Add(new CheckBox
+                    {
+                        Checked = false,
+                        ID = "cb" + ID + "ViewExpressionPageSize"
+                    });
+                    cbSavePageSizeLabel.Controls.Add(new Literal { Text = " Save Page Size" });
+                    divModalBodyRowSpan1Cb.Controls.Add(cbSavePageSizeLabel);
+                }
+
+                if (BootstrapVersion >= 3)
+                {
+                    var divDefaultViewLabel = new HtmlGenericControl("div");
+                    var cbDefaultViewLabel = new HtmlGenericControl("label");
+                    divDefaultViewLabel.Attributes.Add("class", "checkbox");
+                    cbDefaultViewLabel.Controls.Add(new CheckBox
+                    {
+                        Checked = false,
+                        ID = "cb" + ID + "ViewExpressionDefaultView"
+                    });
+                    cbDefaultViewLabel.Controls.Add(new Literal { Text = " Make Default View" });
+                    divDefaultViewLabel.Controls.Add(cbDefaultViewLabel);
+                    divModalBodyRowSpan1Cb.Controls.Add(divDefaultViewLabel);
+                }
+                else
+                {
+                    var cbDefaultViewLabel = new HtmlGenericControl("label");
+                    cbDefaultViewLabel.Attributes.Add("class", "checkbox");
+                    cbDefaultViewLabel.Controls.Add(new CheckBox
+                    {
+                        Checked = false,
+                        ID = "cb" + ID + "ViewExpressionDefaultView"
+                    });
+                    cbDefaultViewLabel.Controls.Add(new Literal { Text = " Make Default View" });
+                    divModalBodyRowSpan1Cb.Controls.Add(cbDefaultViewLabel);
+                }
 
                 divModalBodyRowSpan1.Controls.Add(divModalBodyRowSpan1Cb);
 
-                var cbDefaultViewLabel = new HtmlGenericControl("label");
-                cbDefaultViewLabel.Attributes.Add("class", "checkbox");
-                cbDefaultViewLabel.Controls.Add(new CheckBox
-                {
-                    Checked = false,
-                    ID = "cb" + ID + "ViewExpressionDefaultView"
-                });
-                cbDefaultViewLabel.Controls.Add(new Literal { Text = " Make Default View" });
-                divModalBodyRowSpan1.Controls.Add(cbDefaultViewLabel);
-
                 /* START ALERT */
+                var alertErrorClass = BootstrapVersion >= 3
+                    ? "alert-danger"
+                    : "alert-error";
+
                 var divViewExpressionAlert = new HtmlGenericControl("div");
                 divViewExpressionAlert.ID = "div" + ID + "ViewExpressionAlert";
                 divViewExpressionAlert.ClientIDMode = ClientIDMode.Static;
-                divViewExpressionAlert.Attributes.Add("class", "alert alert-error fade in hide");
+                divViewExpressionAlert.Attributes.Add("class", "alert " + alertErrorClass + " fade in hide");
                 divViewExpressionAlert.Attributes.Add("style", "font-size: 14px;line-height: 20px;");
 
                 var btnViewExpressionAlert = new HtmlButton { InnerText = "x" };
@@ -1749,7 +1776,9 @@ namespace GridViewEx
                 divModalBodyRow2.Controls.Add(divModalBodyRowSpan1);
 
                 var divModalBodyRowSpan2 = new HtmlGenericControl("div");
-                divModalBodyRowSpan2.Attributes.Add("class", "span6");
+                divModalBodyRowSpan2.Attributes.Add("class", BootstrapVersion >= 3
+                    ? "col-md-6"
+                    : "span6");
 
                 var divSavedFilters = new HtmlGenericControl("div");
                 divSavedFilters.Attributes.Add("style", "overflow-y:auto; height:200px; padding:5px; border:1px solid whiteSmoke; font-size:14px; line-height:20px;");
@@ -1786,7 +1815,11 @@ namespace GridViewEx
                         var litViewName = new Literal { Text = " " + view.Name };
                         if (view.DefaultView)
                         {
-                            litViewName.Text += " <i class=\"icon-asterisk\"></i>";
+                            var icon = BootstrapVersion >= 3
+                                ? "glyphicon glyphicon-asterisk"
+                                : "icon-asterisk";
+
+                            litViewName.Text += " <i class=\"" + icon + "\"></i>";
                             li.Attributes.Add("title", "Default View");
                             li.Attributes.Add("style", "font-weight: bold;");
                         }
@@ -1805,7 +1838,11 @@ namespace GridViewEx
                 divModalBodyRow2.Controls.Add(divModalBodyRowSpan2);
 
                 divModalBody.Controls.Add(divModalBodyRow2);
-                divViewExpression.Controls.Add(divModalBody);
+
+                if (BootstrapVersion >= 3)
+                    divViewExpressionModalContent.Controls.Add(divModalBody);
+                else
+                    divViewExpression.Controls.Add(divModalBody);
                 /* END MODAL BODY */
 
                 /* START MODAL FOOTER */
@@ -1813,7 +1850,7 @@ namespace GridViewEx
                 divModalFooter.Attributes.Add("class", "modal-footer");
 
                 var btnCloseModalFooter = new HtmlButton { InnerText = "Close" };
-                btnCloseModalFooter.Attributes.Add("class", "btn");
+                btnCloseModalFooter.Attributes.Add("class", btnClass);
                 btnCloseModalFooter.Attributes.Add("data-dismiss", "modal");
                 btnCloseModalFooter.Attributes.Add("aria-hidden", "true");
                 divModalFooter.Controls.Add(btnCloseModalFooter);
@@ -1821,12 +1858,18 @@ namespace GridViewEx
                 var btnSaveViewManagement = new LinkButton { Text = "Save" };
                 btnSaveViewManagement.Click += btnSaveViewManagement_Click;
                 btnSaveViewManagement.Attributes.Add("class", "btn btn-primary");
-                btnSaveViewManagement.Attributes.Add("onclick", "return " + ClientID + "SaveView('#" + divViewExpression.ClientID + "', '#" + txtViewName.ClientID + "', '#" + divModalBodyRowSpan1Cb.ClientID + "', '#" + divViewExpressionAlert.ClientID + "');");
+                btnSaveViewManagement.Attributes.Add("onclick", "return GVEXSaveView('" + ClientID + "', '#" + divViewExpression.ClientID + "', '#" + txtViewName.ClientID + "', '#" + divModalBodyRowSpan1Cb.ClientID + "', '#" + divViewExpressionAlert.ClientID + "');");
                 divModalFooter.Controls.Add(btnSaveViewManagement);
 
-                divViewExpression.Controls.Add(divModalFooter);
+                if (BootstrapVersion >= 3)
+                    divViewExpressionModalContent.Controls.Add(divModalFooter);
+                else
+                    divViewExpression.Controls.Add(divModalFooter);
                 /* END MODAL FOOTER */
 
+                if (BootstrapVersion >= 3)
+                    divViewExpression.Controls.Add(divViewExpressionModalDialog);
+                
                 phControl.Controls.Add(divViewExpression);
             }
 
@@ -1843,13 +1886,19 @@ namespace GridViewEx
             int records = (int)Context.Session[ID + "_Records"];
 
             var divControl = new HtmlGenericControl("div");
-            divControl.Attributes.Add("class", "pagination pagination-centered");
-
             var ul = new HtmlGenericControl("ul");
+
+            if (BootstrapVersion >= 3)
+            {
+                ul.Attributes.Add("class", "pagination pagination-sm");
+                divControl.Attributes.Add("class", "pagination-div");
+            }
+            else
+                divControl.Attributes.Add("class", "pagination pagination-centered");
 
             if (records > pageSize)
             {
-                var pages = Extensions.FillPager(records, pageIndex, pageSize);
+                var pages = Extensions.FillPager(records, pageIndex, pageSize, BootstrapVersion);
                 foreach (var page in pages)
                 {
                     var liPage = new HtmlGenericControl("li");
@@ -1901,19 +1950,24 @@ namespace GridViewEx
                 var divRecordsSelector = new HtmlGenericControl("div");
                 divRecordsSelector.Attributes.Add("class", "records-select");
 
-                var lblPageRecords = new Label
+                if (BootstrapVersion < 3)
                 {
-                    Text = "Nº Records: ",
-                    AssociatedControlID = "ddlPageRecords",
-                    ToolTip = "Select number of records to display per page"
-                };
-                divRecordsSelector.Controls.Add(lblPageRecords);
+                    var lblPageRecords = new Label
+                    {
+                        Text = "Nº Records: ",
+                        AssociatedControlID = "ddlPageRecords",
+                        ToolTip = "Select number of records to display per page"
+                    };
+                    divRecordsSelector.Controls.Add(lblPageRecords);
+                }
 
                 var ddlPageRecords = new DropDownList
                 {
                     ID = "ddlPageRecords",
                     AutoPostBack = true,
-                    CssClass = "span1",
+                    CssClass = BootstrapVersion >= 3
+                        ? "form-control col-md-1"
+                        : "span1",
                     ToolTip = "Select number of records to display per page"
                 };
                 ddlPageRecords.SelectedIndexChanged += ddlPageRecords_SelectedIndexChanged;
@@ -2084,7 +2138,7 @@ namespace GridViewEx
             var btn = sender as LinkButton;
             if (btn != null)
             {
-                var cookie = Page.Request.Cookies[ID + "_ColumnsSelected"];
+                var cookie = Page.Request.Cookies[ClientID + "_ColumnsSelected"];
                 if (cookie != null)
                 {
                     var js = new JavaScriptSerializer();
@@ -2097,15 +2151,29 @@ namespace GridViewEx
                         if (columnSelection != null)
                         {
                             oldColumnSelection.Visible = Convert.ToBoolean(columnSelection.V);
-                            oldColumnSelection.Index = columnSelection.I;
+                            oldColumnSelection.Index = columnSelection.I + (oldColumnSelection.Index - oldColumnSelection.DisplayIndex);
+                            oldColumnSelection.DisplayIndex = columnSelection.I;
                         }
                     }
 
                     Context.Session[ID + "_Columns"] = oldColumnSelections.OrderBy(x => x.Index).ToList();
-
-                    if (ColumnSelectionChanged != null)
-                        ColumnSelectionChanged(null, EventArgs.Empty);
                 }
+                else
+                {
+                    Page.Response.Cookies.Add(new HttpCookie(ClientID + "_AlertMessage")
+                    {
+                        Value = "Cookie not found",
+                        Path = "",
+                        Expires = DateTime.Now.AddMinutes(5)
+                    });
+
+                    AlertMessageClass = BootstrapVersion >= 3 
+                        ? "alert-danger"
+                        : "alert-error";
+                }
+
+                if (ColumnSelectionChanged != null)
+                    ColumnSelectionChanged(null, EventArgs.Empty);
             }
 
             InitControls();

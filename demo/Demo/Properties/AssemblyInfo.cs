@@ -11,5 +11,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTrademark("GridViewEX")]
 [assembly: ComVisible(false)]
 [assembly: Guid("479d74ab-97a5-4be8-9f91-ac53f5cfe3cf")]
-[assembly: AssemblyVersion("1.0.0")]
-[assembly: AssemblyFileVersion("1.0.0")]
+[assembly: AssemblyVersion("1.4.0")]
+[assembly: AssemblyFileVersion("1.4.0")]

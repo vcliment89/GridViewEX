@@ -161,7 +161,7 @@ namespace GridViewEx.Columns
             var controlClientIDDataField = controlClientID + DataField;
 
             var divFilter = new HtmlGenericControl("div");
-            divFilter.Attributes.Add("class", controlClientID + "Filters");
+            divFilter.Attributes.Add("class", controlClientID + "Filters " + this.ItemStyle.CssClass);
             divFilter.Attributes.Add("style", "display: none;");
             
             var filters = new List<FilterExpression>();
@@ -234,8 +234,8 @@ namespace GridViewEx.Columns
                 if (AllowIndeterminateState
                     && value == null)
                 {
-                    ((GridViewEx)this.Control).JSScriptEndRequestHandler += this.Control.ClientID + @"CheckboxIndeterminate('" + cb.ClientID + @"');";
-                    ((GridViewEx)this.Control).JSScriptDocumentReady += this.Control.ClientID + @"CheckboxIndeterminate('" + cb.ClientID + @"');";
+                    ((GridViewEx)this.Control).JSScriptEndRequestHandler += @"GVEXCheckboxIndeterminate('" + cb.ClientID + @"');";
+                    ((GridViewEx)this.Control).JSScriptDocumentReady += @"GVEXCheckboxIndeterminate('" + cb.ClientID + @"');";
                 }
 
                 // Check if the checkbox is editable or not
@@ -247,24 +247,24 @@ namespace GridViewEx.Columns
                         switch (DisableStateMode)
                         {
                             case CheckboxDisabledModesEnum.All:
-                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'all');";
-                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'all');";
+                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += @"GVEXColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'all');";
+                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += @"GVEXColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'all');";
                                 break;
                             case CheckboxDisabledModesEnum.Unchecked:
-                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'unchecked');";
-                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'unchecked');";
+                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += @"GVEXColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'unchecked');";
+                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += @"GVEXColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'unchecked');";
                                 break;
                             case CheckboxDisabledModesEnum.Indeterminate:
-                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'null');";
-                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'null');";
+                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += @"GVEXColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'null');";
+                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += @"GVEXColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'null');";
                                 break;
                             case CheckboxDisabledModesEnum.Checked:
-                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checked');";
-                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checked');";
+                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += @"GVEXColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checked');";
+                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += @"GVEXColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checked');";
                                 break;
                             case CheckboxDisabledModesEnum.CheckedOrIndeterminate:
-                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checkedOrNull');";
-                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += this.Control.ClientID + @"ColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checkedOrNull');";
+                                ((GridViewEx)this.Control).JSScriptEndRequestHandlerDelayed += @"GVEXColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checkedOrNull');";
+                                ((GridViewEx)this.Control).JSScriptDocumentReadyDelayed += @"GVEXColumnCheckboxesDisable('" + controlClientIDDataField + @"', 'checkedOrNull');";
                                 break;
                         }
                     }

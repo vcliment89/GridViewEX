@@ -48,7 +48,7 @@ For more information on SemVer, please visit [http://semver.org/](http://semver.
 
 ## Copyright and license
 
-Copyright (c) 2013 Vicent Climent.
+Copyright (c) 2013-2014 Vicent Climent.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this work except in compliance with the License.
